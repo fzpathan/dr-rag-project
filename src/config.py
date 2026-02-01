@@ -50,6 +50,18 @@ class Config:
     LLM_MODEL: str = "gpt-4o-mini"  # Cost-effective, good quality
     LLM_TEMPERATURE: float = 0.1  # Low temperature for factual responses
 
+    # OpenRouter settings (free alternative to OpenAI)
+    @property
+    def OPENROUTER_API_KEY(self) -> Optional[str]:
+        return os.getenv("OPENROUTER_API_KEY")
+
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "nvidia/nemotron-3-nano-30b-a3b:free"  # Free model
+
+    @property
+    def USE_OPENROUTER(self) -> bool:
+        return os.getenv("USE_OPENROUTER", "false").lower() == "true"
+
     # Ollama settings (alternative local LLM)
     # Uncomment and configure if using Ollama instead of OpenAI
     # OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")

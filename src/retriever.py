@@ -19,6 +19,7 @@ class RemedyRetriever:
         self,
         query: str,
         k: int = config.TOP_K_RESULTS,
+        source_filter: List[str] = None,
     ) -> List[Tuple[Document, float]]:
         """
         Retrieve top-k relevant documents for a query.
@@ -26,6 +27,7 @@ class RemedyRetriever:
         Args:
             query: Search query string
             k: Number of results to retrieve
+            source_filter: Optional list of book names to filter by
 
         Returns:
             List of (Document, similarity_score) tuples
@@ -35,8 +37,16 @@ class RemedyRetriever:
         if vs is None:
             raise ValueError("Vector store not initialized")
 
+        # Build filter for source books if provided
+        filter_dict = None
+        if source_filter and len(source_filter) > 0:
+            if len(source_filter) == 1:
+                filter_dict = {"book_name": source_filter[0]}
+            else:
+                filter_dict = {"book_name": {"$in": source_filter}}
+
         # Use similarity search with scores
-        results = vs.similarity_search_with_score(query, k=k)
+        results = vs.similarity_search_with_score(query, k=k, filter=filter_dict)
 
         return results
 
@@ -70,6 +80,7 @@ class RemedyRetriever:
         self,
         query: str,
         k: int = config.TOP_K_RESULTS,
+        source_filter: List[str] = None,
     ) -> Tuple[str, List[str], List[Document]]:
         """
         Retrieve documents and format as context string.
@@ -77,11 +88,12 @@ class RemedyRetriever:
         Args:
             query: Search query string
             k: Number of results to retrieve
+            source_filter: Optional list of book names to filter by
 
         Returns:
             Tuple of (context_string, list_of_citations, list_of_documents)
         """
-        results = self.retrieve(query, k)
+        results = self.retrieve(query, k, source_filter=source_filter)
 
         if not results:
             return "", [], []

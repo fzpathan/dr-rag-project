@@ -122,12 +122,13 @@ def main():
 
         # Settings
         st.subheader("⚙️ Settings")
-        num_results = st.slider(
-            "Number of sources to retrieve",
-            min_value=1,
-            max_value=10,
-            value=config.TOP_K_RESULTS,
-            help="More sources provide broader context but may slow down responses",
+
+        # Source book filter
+        selected_sources = st.multiselect(
+            "Filter by source books",
+            options=sources,
+            default=sources,
+            help="Select which books to search in. Leave empty to search all.",
         )
 
         show_sources = st.checkbox("Show source passages", value=True)
@@ -210,9 +211,10 @@ def main():
             clean_query = sanitize_query(query)
 
             with st.spinner("Searching through homeopathy texts..."):
-                # Retrieve relevant chunks
+                # Retrieve relevant chunks (filter by selected sources if not all selected)
+                source_filter = selected_sources if selected_sources else None
                 context, citations, documents = retriever.retrieve_as_context(
-                    clean_query, k=num_results
+                    clean_query, k=config.TOP_K_RESULTS, source_filter=source_filter
                 )
 
                 if not context:
