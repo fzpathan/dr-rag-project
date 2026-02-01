@@ -1,1 +1,13 @@
+# Python
 *.pyc
+__pycache__/
+
+# Environment
+.env
+
+# IDE/Editor
+.claude/settings.local.json
+.claude/settings.json
+
+# Virtual environment
+venv/
