@@ -1,0 +1,28 @@
+# FastAPI Backend Requirements
+# Install with: pip install -r api_requirements.txt
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Database
+sqlalchemy>=2.0.0
+
+# File uploads
+python-multipart>=0.0.6
+
+# OpenAI (for Whisper speech-to-text)
+openai>=1.0.0
+
+# Note: The following are already in requirements.txt
+# and will be used by the RAG service:
+# - langchain
+# - langchain-openai
+# - langchain-chroma
+# - chromadb
+# - sentence-transformers
+# - python-dotenv
