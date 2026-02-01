@@ -30,6 +30,21 @@ Structure your response in the following sections:
 List 1-3 most suitable remedies based on the sources. For each remedy:
 - **[Remedy Name]**: One sentence describing its primary indication for this condition.
 
+## Report
+Create a specific symptom-overlap grid to help the doctor visualize which remedies cover which patient symptoms.
+- **Format**: Use a Markdown table.
+- **Rows**: List the specific key symptoms found in the {question}.
+- **Columns**: The top recommended remedies.
+- **Cells**: Mark with an "X" (or a Grade 1-4 if the text specifies intensity/formatting) if the source text confirms the remedy covers that symptom.
+- **Total**: The bottom row must calculate the "Total Symptoms Covered" for each remedy.
+
+*Example Format:*
+| Symptom / Rubric | Remedy A | Remedy B | Remedy C |
+| :--- | :---: | :---: | :---: |
+| Burning pain | X | | X |
+| Better by heat | X | X | |
+| **Total Covered** | **2** | **1** | **1** |
+
 ## Detailed Explanation
 Provide a brief, human-friendly summary (2-4 sentences) explaining why these remedies are suggested and their key characteristics relevant to the query.
 
