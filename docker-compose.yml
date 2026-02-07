@@ -1,0 +1,41 @@
+services:
+  api:
+    build: .
+    container_name: dr-rag-api
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - db_data:/app/db
+    environment:
+      - DATABASE_URL=sqlite:////app/db/api_users.db
+
+  nginx:
+    image: nginx:alpine
+    container_name: dr-rag-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot_etc:/etc/letsencrypt:ro
+      - certbot_var:/var/lib/letsencrypt
+      - webroot:/var/www/certbot
+    depends_on:
+      - api
+
+  certbot:
+    image: certbot/certbot
+    container_name: dr-rag-certbot
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/lib/letsencrypt
+      - webroot:/var/www/certbot
+
+volumes:
+  db_data:
+  certbot_etc:
+  certbot_var:
+  webroot:

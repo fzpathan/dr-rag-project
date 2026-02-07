@@ -7,33 +7,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files first (for Docker layer caching)
+# Copy dependency files first (Docker layer caching)
 COPY requirements.txt api_requirements.txt ./
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt -r api_requirements.txt
 
-# Pre-download the sentence-transformers model so it's baked into the image
+# Pre-download the sentence-transformers model
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 # Copy application code
 COPY src/ ./src/
 COPY api/ ./api/
 COPY data/ ./data/
+COPY vectorstore/ ./vectorstore/
 COPY ingest.py seed_dummy_user.py ./
 
-# Copy vectorstore if it exists (pre-built embeddings)
-COPY vectorstore/ ./vectorstore/
+EXPOSE 8000
 
-# Copy startup script
-COPY start.sh ./
-RUN chmod +x start.sh
-
-# Create volume mount point for persistent data
-RUN mkdir -p /data
-
-# Expose port
-EXPOSE 8080
-
-# Run via startup script
-CMD ["./start.sh"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
