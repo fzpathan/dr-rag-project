@@ -1,38 +1,23 @@
-app = 'dr-rag-api'
-primary_region = 'sin'
+# fly.toml app configuration file generated for dr-rag-project on 2026-02-07T17:21:26Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'dr-rag-project'
+primary_region = 'iad'
 
 [build]
-
-[env]
-  USE_OPENROUTER = 'true'
-  USE_OPENAI_EMBEDDINGS = 'false'
-  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'suspend'
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-
-  [http_service.concurrency]
-    type = 'requests'
-    hard_limit = 250
-    soft_limit = 200
+  processes = ['app']
 
 [[vm]]
-  memory = '256mb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-
-[mounts]
-  source = 'dr_rag_data'
-  destination = '/data'
-  initial_size = 1
-
-[[http_service.checks]]
-  grace_period = "30s"
-  interval = "30s"
-  method = "GET"
-  timeout = "5s"
-  path = "/health"
+  memory_mb = 1024
