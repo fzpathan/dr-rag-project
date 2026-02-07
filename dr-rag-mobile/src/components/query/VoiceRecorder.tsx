@@ -18,7 +18,7 @@ import { colors } from '../../constants/colors';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 
 interface VoiceRecorderProps {
-  onRecordingComplete: (uri: string) => void;
+  onRecordingComplete: (transcription: string) => void;
   maxDuration?: number;
   disabled?: boolean;
 }
@@ -31,6 +31,7 @@ export function VoiceRecorder({
   const {
     isRecording,
     duration,
+    transcription,
     error,
     startRecording,
     stopRecording,
@@ -76,9 +77,9 @@ export function VoiceRecorder({
     if (disabled) return;
 
     if (isRecording) {
-      const uri = await stopRecording();
-      if (uri) {
-        onRecordingComplete(uri);
+      const text = await stopRecording();
+      if (text) {
+        onRecordingComplete(text);
       }
     } else {
       await startRecording();
@@ -124,10 +125,22 @@ export function VoiceRecorder({
         {formatDuration(duration)} / {formatDuration(maxDuration)}
       </Text>
 
+      <Text style={styles.transcriptionLabel}>Heard</Text>
+      <Text
+        style={[
+          styles.transcription,
+          !transcription && styles.transcriptionEmpty,
+        ]}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+      >
+        {transcription || 'Listening for your question...'}
+      </Text>
+
       <Text style={styles.hint}>
         {isRecording
-          ? 'Tap to stop recording'
-          : 'Tap to start recording your question'}
+          ? 'Tap again to stop listening'
+          : 'Tap to start capturing your question verbally'}
       </Text>
 
       {isRecording && (
@@ -185,8 +198,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
+  transcriptionLabel: {
+    marginTop: 16,
+    fontSize: 12,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  transcription: {
+    marginTop: 4,
+    fontSize: 16,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  transcriptionEmpty: {
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
   hint: {
-    marginTop: 8,
+    marginTop: 12,
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',

@@ -10,6 +10,8 @@ import Markdown from 'react-native-markdown-display';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../constants/colors';
+import { useRubricStore } from '../../stores/rubricStore';
+import { parseRubricTable, hasRubricTable } from '../../utils/parseRubricTable';
 import type { QueryResponse, Citation } from '../../types/query';
 
 interface ResponseCardProps {
@@ -19,6 +21,19 @@ interface ResponseCardProps {
 export function ResponseCard({ response }: ResponseCardProps) {
   const [showSources, setShowSources] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const { saveRubric, isRubricSaved } = useRubricStore();
+
+  const rubricAvailable = hasRubricTable(response.answer);
+  const alreadySaved = isRubricSaved(response.id);
+
+  const handleSave = async () => {
+    const table = parseRubricTable(response.answer);
+    if (!table) return;
+    saveRubric(response.question, response.id, table);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setSaved(true);
+  };
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(response.answer);
@@ -129,6 +144,27 @@ export function ResponseCard({ response }: ResponseCardProps) {
 
         {/* Actions */}
         <View style={styles.actions}>
+          {rubricAvailable && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleSave}
+              disabled={alreadySaved || saved}
+            >
+              <MaterialCommunityIcons
+                name={alreadySaved || saved ? 'bookmark-check' : 'bookmark-outline'}
+                size={18}
+                color={alreadySaved || saved ? colors.success : colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.actionText,
+                  (alreadySaved || saved) && styles.actionTextSuccess,
+                ]}
+              >
+                {alreadySaved || saved ? 'Saved' : 'Save Rubric'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleCopy}

@@ -1,210 +1,226 @@
 /**
- * Voice recorder hook using expo-av.
+ * Voice recorder hook that uses native speech recognition (react-native-voice)
+ * to convert microphone input into text directly on the device.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Audio } from 'expo-av';
-import * as Haptics from 'expo-haptics';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Voice from 'react-native-voice';
 
 interface UseVoiceRecorderOptions {
-  maxDuration?: number; // in seconds
-  onTranscriptionComplete?: (text: string) => void;
+  maxDuration?: number; // seconds
+  language?: string;
 }
 
 interface UseVoiceRecorderReturn {
   isRecording: boolean;
-  isPaused: boolean;
   duration: number;
-  recordingUri: string | null;
+  transcription: string;
   error: string | null;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<string | null>;
-  pauseRecording: () => Promise<void>;
-  resumeRecording: () => Promise<void>;
   cancelRecording: () => Promise<void>;
 }
+
+type SpeechResultsEvent = {
+  value?: string[];
+};
+
+type SpeechErrorEvent = {
+  error?: {
+    message?: string;
+  };
+};
 
 export function useVoiceRecorder(
   options: UseVoiceRecorderOptions = {}
 ): UseVoiceRecorderReturn {
-  const { maxDuration = 30 } = options;
+  const { maxDuration = 30, language = 'en-US' } = options;
 
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [recordingUri, setRecordingUri] = useState<string | null>(null);
+  const [transcription, setTranscription] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingResolveRef = useRef<((text: string | null) => void) | null>(null);
+  const lastTranscriptRef = useRef<string>('');
+  const isRecordingRef = useRef(false);
 
-  // Request permissions on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
-          setError('Microphone permission denied');
-        }
-      } catch (err) {
-        setError('Failed to request microphone permission');
-      }
-    })();
-
-    return () => {
-      // Cleanup on unmount
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(() => {});
-      }
-    };
+  const finalizeRecognition = useCallback((text: string | null) => {
+    if (pendingResolveRef.current) {
+      pendingResolveRef.current(text);
+      pendingResolveRef.current = null;
+    }
   }, []);
 
-  // Timer effect
   useEffect(() => {
-    if (isRecording && !isPaused) {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  const getTranscript = useCallback(() => {
+    return lastTranscriptRef.current.trim() || null;
+  }, []);
+
+  const stopRecording = useCallback(async (): Promise<string | null> => {
+    if (!isRecordingRef.current) {
+      return getTranscript();
+    }
+
+    return new Promise(async (resolve) => {
+      pendingResolveRef.current = resolve;
+
+      try {
+        if (!Voice) {
+          setError('Speech recognition module unavailable.');
+          finalizeRecognition(getTranscript());
+          pendingResolveRef.current = null;
+          setIsRecording(false);
+          return;
+        }
+
+        await Voice.stop();
+      } catch (err) {
+        console.error('Speech recognition stop failed:', err);
+        setError('Failed to stop speech recognition');
+        finalizeRecognition(getTranscript());
+        pendingResolveRef.current = null;
+      } finally {
+        setIsRecording(false);
+        setDuration(0);
+      }
+    });
+  }, [finalizeRecognition, getTranscript]);
+
+  const cancelRecording = useCallback(async () => {
+    if (!isRecordingRef.current) {
+      return;
+    }
+
+    try {
+      if (!Voice) {
+        pendingResolveRef.current = null;
+        setIsRecording(false);
+        setDuration(0);
+        setTranscription('');
+        lastTranscriptRef.current = '';
+        return;
+      }
+
+      await Voice.cancel();
+    } catch (err) {
+      console.error('Speech recognition cancel failed:', err);
+    } finally {
+      finalizeRecognition(null);
+      pendingResolveRef.current = null;
+      setIsRecording(false);
+      setDuration(0);
+      setTranscription('');
+      lastTranscriptRef.current = '';
+    }
+  }, [finalizeRecognition]);
+
+  const startRecording = useCallback(async () => {
+    if (isRecordingRef.current) {
+      return;
+    }
+
+    if (!Voice) {
+      setError('Speech recognition module unavailable.');
+      return;
+    }
+
+    setError(null);
+    setTranscription('');
+    lastTranscriptRef.current = '';
+    setDuration(0);
+
+    pendingResolveRef.current = null;
+
+    try {
+      await Voice.start(language);
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Speech recognition failed to start:', err);
+      setError('Unable to access speech recognition');
+    }
+  }, [language]);
+
+  useEffect(() => {
+    if (!Voice) {
+      setError('Speech recognition module unavailable.');
+      return;
+    }
+
+    const handleSpeechStart = () => {
+      setError(null);
+    };
+
+    const handleSpeechResults = (event: SpeechResultsEvent) => {
+      const value = event.value?.join(' ') || '';
+      lastTranscriptRef.current = value.trim();
+      setTranscription(value.trim());
+    };
+
+    const handleSpeechPartialResults = (event: SpeechResultsEvent) => {
+      const value = event.value?.join(' ') || '';
+      setTranscription(value.trim());
+    };
+
+    const handleSpeechError = (event: SpeechErrorEvent) => {
+      const message = event.error?.message || 'Speech recognition failed';
+      setError(message);
+      finalizeRecognition(null);
+      pendingResolveRef.current = null;
+      setIsRecording(false);
+    };
+
+    const handleSpeechEnd = () => {
+      finalizeRecognition(getTranscript());
+    };
+
+    Voice.onSpeechStart = handleSpeechStart;
+    Voice.onSpeechResults = handleSpeechResults;
+    Voice.onSpeechPartialResults = handleSpeechPartialResults;
+    Voice.onSpeechError = handleSpeechError;
+    Voice.onSpeechEnd = handleSpeechEnd;
+
+    return () => {
+      Voice.destroy().catch(() => {});
+      Voice.removeAllListeners();
+    };
+  }, [finalizeRecognition, getTranscript]);
+
+  useEffect(() => {
+    if (isRecording) {
       timerRef.current = setInterval(() => {
-        setDuration((prev) => {
-          if (prev >= maxDuration) {
-            // Auto-stop at max duration
-            stopRecording();
-            return prev;
-          }
-          return prev + 1;
-        });
+        setDuration((prev) => prev + 1);
       }, 1000);
-    } else {
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
     };
-  }, [isRecording, isPaused, maxDuration]);
-
-  const startRecording = useCallback(async () => {
-    try {
-      setError(null);
-      setRecordingUri(null);
-      setDuration(0);
-
-      // Configure audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      // Create and start recording
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      recordingRef.current = recording;
-      setIsRecording(true);
-
-      // Haptic feedback
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-      setError('Failed to start recording');
-    }
-  }, []);
-
-  const stopRecording = useCallback(async (): Promise<string | null> => {
-    try {
-      if (!recordingRef.current) {
-        return null;
-      }
-
-      setIsRecording(false);
-      setIsPaused(false);
-
-      await recordingRef.current.stopAndUnloadAsync();
-
-      // Reset audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-
-      if (uri) {
-        setRecordingUri(uri);
-
-        // Haptic feedback
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        return uri;
-      }
-
-      return null;
-    } catch (err) {
-      console.error('Failed to stop recording:', err);
-      setError('Failed to stop recording');
-      return null;
-    }
-  }, []);
-
-  const pauseRecording = useCallback(async () => {
-    try {
-      if (recordingRef.current && isRecording) {
-        await recordingRef.current.pauseAsync();
-        setIsPaused(true);
-      }
-    } catch (err) {
-      console.error('Failed to pause recording:', err);
-    }
   }, [isRecording]);
 
-  const resumeRecording = useCallback(async () => {
-    try {
-      if (recordingRef.current && isPaused) {
-        await recordingRef.current.startAsync();
-        setIsPaused(false);
-      }
-    } catch (err) {
-      console.error('Failed to resume recording:', err);
+  useEffect(() => {
+    if (duration >= maxDuration && isRecording) {
+      stopRecording();
     }
-  }, [isPaused]);
-
-  const cancelRecording = useCallback(async () => {
-    try {
-      if (recordingRef.current) {
-        await recordingRef.current.stopAndUnloadAsync();
-        recordingRef.current = null;
-      }
-
-      setIsRecording(false);
-      setIsPaused(false);
-      setDuration(0);
-      setRecordingUri(null);
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-    } catch (err) {
-      console.error('Failed to cancel recording:', err);
-    }
-  }, []);
+  }, [duration, isRecording, maxDuration, stopRecording]);
 
   return {
     isRecording,
-    isPaused,
     duration,
-    recordingUri,
+    transcription,
     error,
     startRecording,
     stopRecording,
-    pauseRecording,
-    resumeRecording,
     cancelRecording,
   };
 }

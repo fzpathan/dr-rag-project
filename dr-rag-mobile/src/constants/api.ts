@@ -25,9 +25,6 @@ export const endpoints = {
   stats: '/query/stats',
   cacheStats: '/query/cache-stats',
 
-  // Speech
-  transcribe: '/speech/transcribe',
-
   // Health
   health: '/health',
 };
@@ -36,7 +33,6 @@ export const endpoints = {
 export const timeouts = {
   default: 30000,
   query: 60000,  // RAG queries can take longer
-  upload: 120000,  // Audio upload
 };
 
 export default {

@@ -12,3 +12,7 @@ __pycache__/
 # Virtual environment
 venv/
 API_Keys
+
+dr-rag-mobile/node_modules
+.env
+.env

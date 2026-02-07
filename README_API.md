@@ -7,7 +7,7 @@ FastAPI backend for the DR-RAG Mobile Application.
 - **JWT Authentication**: Secure email/password authentication
 - **RAG Query Endpoint**: AI-powered remedy recommendations
 - **Query Caching**: Intelligent caching for faster repeated queries
-- **Speech-to-Text**: OpenAI Whisper integration for voice transcription
+- **Mobile Voice Input**: Speech-to-text happens directly on the mobile client; the API only accepts text queries
 - **Auto-generated Docs**: Swagger UI at `/docs`
 
 ## Setup
@@ -30,12 +30,9 @@ Add the following to your `.env` file:
 # REQUIRED: JWT Secret Key (generate with: openssl rand -hex 32)
 JWT_SECRET_KEY=your-secret-key-here
 
-# LLM Configuration (choose one)
-USE_OPENROUTER=true
-OPENROUTER_API_KEY=your-key
-
-# OR
-OPENAI_API_KEY=sk-your-key
+# LLM Configuration (local Ollama)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
 ```
 
 ### 3. Initialize Database
@@ -71,12 +68,6 @@ uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers 4
 | GET | `/api/v1/query/sources` | List available source books |
 | GET | `/api/v1/query/stats` | Get knowledge base statistics |
 | GET | `/api/v1/query/cache-stats` | Get cache statistics |
-
-### Speech
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/speech/transcribe` | Transcribe audio to text |
 
 ### System
 

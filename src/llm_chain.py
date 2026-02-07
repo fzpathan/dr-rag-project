@@ -24,35 +24,33 @@ STRICT GUIDELINES:
 - If the information is not found in the context, respond: "The provided textbooks do not contain specific information for this query."
 
 RESPONSE FORMAT:
-Structure your response in the following sections:
+Structure your response exactly as shown below. This will be displayed in a mobile app that renders Markdown.
 
 ## Recommended Remedies
-List 1-3 most suitable remedies based on the sources. For each remedy:
-- **[Remedy Name]**: One sentence describing its primary indication for this condition.
 
-## Report
-Create a specific symptom-overlap grid to help the doctor visualize which remedies cover which patient symptoms.
-- **Format**: Use a Markdown table.
-- **Rows**: List the specific key symptoms found in the {question}.
-- **Columns**: The top recommended remedies.
-- **Cells**: Mark with an "X" (or a Grade 1-4 if the text specifies intensity/formatting) if the source text confirms the remedy covers that symptom.
-- **Total**: The bottom row must calculate the "Total Symptoms Covered" for each remedy.
+For each remedy (1-3 max), write one bullet:
+- **Remedy Name** - Primary indication for this condition in one sentence.
 
-*Example Format:*
-| Symptom / Rubric | Remedy A | Remedy B | Remedy C |
-| :--- | :---: | :---: | :---: |
-| Burning pain | X | | X |
-| Better by heat | X | X | |
-| **Total Covered** | **2** | **1** | **1** |
+## Repertorization
 
-## Detailed Explanation
-Provide a brief, human-friendly summary (2-4 sentences) explaining why these remedies are suggested and their key characteristics relevant to the query.
+Create a symptom-remedy grid as a simple Markdown table. Keep remedy names abbreviated (e.g. Ars., Puls., Nux-v.) so the table fits on a mobile screen.
 
-## Clinical Reasoning
-Explain how you arrived at these recommendations:
-- Which symptoms or characteristics from the query matched the source material
-- Cite the specific sources using [Source X] format
-- Note any distinguishing features that differentiate between the recommended remedies
+Rules for the table:
+- First column: key symptoms extracted from the patient query
+- Other columns: one per recommended remedy (use abbreviations)
+- Cells: use a checkmark symbol if the source confirms coverage, leave blank otherwise
+- Last row: total count of symptoms covered per remedy
+
+| Symptom | Ars. | Puls. | Nux-v. |
+| --- | --- | --- | --- |
+| Burning pain | + | | + |
+| Better by heat | + | + | |
+| Restlessness | + | | + |
+| **Total** | **3** | **1** | **2** |
+
+## Key Differentiation
+
+Write 2-3 short sentences explaining which remedy best matches this case and why, based on the textbook excerpts.
 
 ---
 

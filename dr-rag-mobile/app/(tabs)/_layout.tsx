@@ -54,11 +54,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="coming-up"
+        name="saved-rubrics"
         options={{
-          title: 'Coming Up',
+          title: 'Rubrics',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="rocket-launch" size={size} color={color} />
+            <MaterialCommunityIcons name="bookmark-multiple" size={size} color={color} />
           ),
         }}
       />

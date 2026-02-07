@@ -25,7 +25,6 @@ interface QueryStore {
   setQuery: (query: string) => void;
   setInputMode: (mode: 'text' | 'voice') => void;
   submitQuery: (request: QueryRequest) => Promise<QueryResponse>;
-  transcribeAudio: (audioUri: string) => Promise<string>;
   loadSources: () => Promise<void>;
   clearResponse: () => void;
   clearError: () => void;
@@ -73,33 +72,6 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
         error.response?.data?.detail ||
         error.message ||
         'Failed to get remedy recommendations';
-
-      set({
-        error: errorMessage,
-        isLoading: false,
-      });
-
-      throw new Error(errorMessage);
-    }
-  },
-
-  transcribeAudio: async (audioUri: string) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      const result = await queryService.transcribe(audioUri);
-
-      set({
-        currentQuery: result.transcription,
-        isLoading: false,
-      });
-
-      return result.transcription;
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.detail ||
-        error.message ||
-        'Failed to transcribe audio';
 
       set({
         error: errorMessage,

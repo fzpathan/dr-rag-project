@@ -46,13 +46,3 @@ class StatsResponse(BaseModel):
     sources: List[str]
 
 
-class SpeechTranscribeRequest(BaseModel):
-    """Request model for speech transcription (metadata only)."""
-    language: str = "en"
-
-
-class SpeechTranscribeResponse(BaseModel):
-    """Response model for speech transcription."""
-    transcription: str
-    confidence: float
-    language: str

@@ -7,6 +7,10 @@ pip install -r api_requirements.txt
 # Add JWT_SECRET_KEY to your .env file
 echo "JWT_SECRET_KEY=ZORIF$(openssl rand -hex 32)" >> .env
 
+# Configure local LLM (Ollama)
+echo "OLLAMA_BASE_URL=http://localhost:11434" >> .env
+echo "OLLAMA_MODEL=llama3.2" >> .env
+
 # Start the server
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 API docs available at: http://localhost:8000/docs
@@ -31,7 +35,7 @@ Physical Device: http://<your-ip>:8000/api/v1
 App Features
 Professional teal/medical color scheme
 Text or voice input toggle
-Voice recording with animated pulse effect
+On-device voice-to-text (no backend transcription)
 AI-generated remedy recommendations with markdown rendering
 Collapsible source citations
 Query caching (24h TTL)

@@ -41,11 +41,6 @@ class APIConfig(BaseConfig):
     CACHE_MAX_SIZE: int = 1000
     CACHE_TTL_HOURS: int = 24
 
-    # Speech-to-Text
-    @property
-    def WHISPER_ENABLED(self) -> bool:
-        return bool(self.OPENAI_API_KEY)
-
 
 # Global API config instance
 api_config = APIConfig()

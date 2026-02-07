@@ -37,12 +37,6 @@ export interface StatsResponse {
   sources: string[];
 }
 
-export interface TranscribeResponse {
-  transcription: string;
-  confidence: number;
-  language: string;
-}
-
 export interface QueryHistoryItem {
   id: string;
   question: string;

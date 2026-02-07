@@ -4,7 +4,7 @@ React Native + Expo mobile application for the Homeopathy Remedy Finder.
 
 ## Features
 
-- **Voice & Text Input**: Record your question or type it
+- **Voice & Text Input**: On-device speech-to-text or manual typing
 - **AI-Powered Recommendations**: Get remedy suggestions from classical texts
 - **Source Citations**: Every recommendation includes textbook references
 - **Professional UI**: Clean, medical-themed design

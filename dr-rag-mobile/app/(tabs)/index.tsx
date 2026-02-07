@@ -32,7 +32,6 @@ export default function HomeScreen() {
     setQuery,
     setInputMode,
     submitQuery,
-    transcribeAudio,
     clearResponse,
     clearError,
   } = useQueryStore();
@@ -57,15 +56,18 @@ export default function HomeScreen() {
     }
   };
 
-  const handleVoiceRecordingComplete = async (uri: string) => {
+  const handleVoiceRecordingComplete = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      Alert.alert('No speech detected', 'Please speak clearly or switch to text input.');
+      return;
+    }
+
+    setQuery(trimmed);
     try {
-      const transcription = await transcribeAudio(uri);
-      // Auto-submit after transcription
-      if (transcription) {
-        await submitQuery({ question: transcription });
-      }
+      await submitQuery({ question: trimmed });
     } catch (err) {
-      Alert.alert('Transcription Failed', 'Unable to transcribe audio. Please try again or type your question.');
+      // Store already reports the error.
     }
   };
 
