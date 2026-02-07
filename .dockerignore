@@ -1,0 +1,40 @@
+# Mobile app
+dr-rag-mobile/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+*.md
+LICENSE
+
+# Streamlit (not needed for API deployment)
+.streamlit/
+
+# Claude
+.claude/
+
+# SQLite user DB (will be created fresh or use persistent volume)
+api_users.db
