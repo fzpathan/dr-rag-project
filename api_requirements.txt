@@ -12,6 +12,9 @@ passlib[bcrypt]>=1.7.4
 # Database
 sqlalchemy>=2.0.0
 
+# Pydantic email validation (required by EmailStr)
+email-validator>=2.0.0
+
 # File uploads
 python-multipart>=0.0.6
 

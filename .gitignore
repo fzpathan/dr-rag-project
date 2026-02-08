@@ -2,17 +2,20 @@
 *.pyc
 __pycache__/
 
-# Environment
+# Environment / secrets
 .env
+API_Keys
 
-# IDE/Editor
+# IDE / tooling
 .claude/settings.local.json
 .claude/settings.json
 
 # Virtual environment
 venv/
-API_Keys
 
-dr-rag-mobile/node_modules
-.env
-.env
+# Mobile app dependencies
+dr-rag-mobile/node_modules/
+
+# Build artifacts
+vectorstore/
+api_users.db
