@@ -73,8 +73,14 @@ def get_llm():
         return ChatOpenAI(
             model=config.OPENROUTER_MODEL,
             temperature=config.LLM_TEMPERATURE,
-            openai_api_key=config.OPENROUTER_API_KEY,
-            openai_api_base=config.OPENROUTER_BASE_URL,
+            api_key=config.OPENROUTER_API_KEY,
+            base_url=config.OPENROUTER_BASE_URL,
+            default_headers={
+                "HTTP-Referer": "https://dr-rag-api.run.app",
+                "X-Title": "DR-RAG Homeopathy Finder",
+            },
+            timeout=60,
+            max_retries=3,
         )
 
     # Fall back to OpenAI
@@ -83,7 +89,9 @@ def get_llm():
         return ChatOpenAI(
             model=config.LLM_MODEL,
             temperature=config.LLM_TEMPERATURE,
-            openai_api_key=config.OPENAI_API_KEY,
+            api_key=config.OPENAI_API_KEY,
+            timeout=60,
+            max_retries=3,
         )
 
     raise ValueError(
