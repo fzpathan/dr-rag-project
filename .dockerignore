@@ -1,16 +1,37 @@
+# Virtual environments
+venv/
+node_modules/
+
+# Mobile app (not deployed to Cloud Run)
 dr-rag-mobile/
+
+# Environment and secrets
+.env
+API_Keys
+
+# Git
+.git/
+.gitignore
+
+# IDE / tooling
+.claude/
 __pycache__/
 *.pyc
 *.pyo
-.venv/
-venv/
-.env
-.env.local
-.vscode/
-.idea/
-.git/
-.claude/
-.DS_Store
-Thumbs.db
-*.md
+
+# Pre-built vectorstore (rebuilt during Docker build)
+vectorstore/
+
+# Local database
 api_users.db
+
+# Fly.io configs (not used for GCP)
+fly.toml
+fly.streamlit.toml
+
+# Dev/test scripts
+seed_dummy_user.py
+test_openrouter.py
+
+# Documentation
+*.md

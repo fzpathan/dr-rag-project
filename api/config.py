@@ -29,12 +29,15 @@ class APIConfig(BaseConfig):
     def DATABASE_URL(self) -> str:
         return os.getenv("DATABASE_URL", "sqlite:///./api_users.db")
 
-    # CORS
+    # CORS — set CORS_ORIGINS env var as comma-separated list in production
+    # e.g. CORS_ORIGINS=https://myapp.example.com,https://admin.example.com
     CORS_ORIGINS: list = field(default_factory=lambda: [
-        "http://localhost:8081",  # Expo dev
-        "http://localhost:19006",  # Expo web
-        "exp://localhost:8081",
-        "*",  # Allow all for development
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:8081,http://localhost:19006,exp://localhost:8081",
+        ).split(",")
+        if origin.strip()
     ])
 
     # Cache Settings

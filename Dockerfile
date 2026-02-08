@@ -1,28 +1,62 @@
-FROM python:3.11-slim
+# DR-RAG: Homeopathy Remedy Finder
+# Optimized for Google Cloud Run deployment
+
+# ── Stage 1: Build & ingest ──────────────────────────────────────────────────
+FROM python:3.11-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends build-essential && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files first (Docker layer caching)
+# Install Python dependencies (cached layer)
 COPY requirements.txt api_requirements.txt ./
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt -r api_requirements.txt
 
-# Pre-download the sentence-transformers model
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+# Copy source needed for ingestion
+COPY src/ src/
+COPY data/ data/
+COPY ingest.py ./
 
-# Copy application code
-COPY src/ ./src/
-COPY api/ ./api/
-COPY data/ ./data/
-COPY vectorstore/ ./vectorstore/
-COPY ingest.py seed_dummy_user.py ./
+# Build vectorstore at image build time
+RUN python ingest.py --reset
 
-EXPOSE 8000
+# ── Stage 2: Production image ────────────────────────────────────────────────
+FROM python:3.11-slim
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install only runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy built vectorstore from builder
+COPY --from=builder /app/vectorstore vectorstore/
+
+# Copy HuggingFace model cache so it isn't re-downloaded at runtime
+COPY --from=builder /root/.cache/huggingface /root/.cache/huggingface
+
+# Copy application source
+COPY src/ src/
+COPY api/ api/
+COPY app.py ingest.py ./
+
+# Cloud Run injects PORT (default 8080)
+ENV PORT=8080
+EXPOSE ${PORT}
+
+# Start FastAPI, reading PORT from environment
+CMD exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT}

@@ -1,0 +1,19 @@
+app = 'dr-rag-web'
+primary_region = 'ord'
+
+[build]
+
+[http_service]
+  internal_port = 8501
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[processes]
+  app = 'streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '1gb'

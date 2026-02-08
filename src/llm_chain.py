@@ -53,16 +53,7 @@ Rules for the table:
 Write 2-3 short sentences explaining which remedy best matches this case and why, based on the textbook excerpts.
 
 ---
-
-TEXTBOOK EXCERPTS:
-{context}
-
----
-
-PATIENT QUERY: {question}
-
-Provide your professional assessment based solely on the textbook excerpts above:"""
-
+"""
 
 def get_llm():
     """
