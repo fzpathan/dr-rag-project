@@ -36,7 +36,8 @@ WORKDIR /app
 
 # Install only runtime dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libgomp1 && \
+    apt-get install -y --no-install-recommends libgomp1 ca-certificates && \
+    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder

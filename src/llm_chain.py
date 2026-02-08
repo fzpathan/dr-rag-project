@@ -4,6 +4,7 @@ LLM chain for generating responses from retrieved context.
 import logging
 from typing import Tuple, List
 
+import httpx
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -16,44 +17,20 @@ logger = logging.getLogger(__name__)
 
 
 # Prompt template for remedy queries
-REMEDY_PROMPT = """You are a professional homeopathic medicine consultant. Your role is to provide accurate remedy recommendations based strictly on classical homeopathy textbooks.
+REMEDY_PROMPT = """You are a homeopathic medicine consultant. Read the textbook excerpts and answer the patient query using only the information provided.
 
-STRICT GUIDELINES:
-- Use ONLY information from the provided textbook excerpts below
-- Do NOT use external knowledge or make assumptions beyond the source material
-- If the information is not found in the context, respond: "The provided textbooks do not contain specific information for this query."
+TEXTBOOK EXCERPTS:
+{context}
 
-RESPONSE FORMAT:
-Structure your response exactly as shown below. This will be displayed in a mobile app that renders Markdown.
+PATIENT QUERY: {question}
 
-## Recommended Remedies
+Based on the excerpts above, recommend 1-3 remedies. For each remedy state:
+- **Remedy name** and suggested potency/dose
+- Key matching symptoms from the excerpts
 
-For each remedy (1-3 max), write one bullet:
-- **Remedy Name** - Primary indication for this condition in one sentence.
+Then write 2-3 sentences explaining which remedy best fits this case and why.
 
-## Repertorization
-
-Create a symptom-remedy grid as a simple Markdown table. Keep remedy names abbreviated (e.g. Ars., Puls., Nux-v.) so the table fits on a mobile screen.
-
-Rules for the table:
-- First column: key symptoms extracted from the patient query
-- Other columns: one per recommended remedy (use abbreviations)
-- Cells: use a checkmark symbol if the source confirms coverage, leave blank otherwise
-- Last row: total count of symptoms covered per remedy
-
-| Symptom | Ars. | Puls. | Nux-v. |
-| --- | --- | --- | --- |
-| Burning pain | + | | + |
-| Better by heat | + | + | |
-| Restlessness | + | | + |
-| **Total** | **3** | **1** | **2** |
-
-## Key Differentiation
-
-Write 2-3 short sentences explaining which remedy best matches this case and why, based on the textbook excerpts.
-
----
-"""
+Use Markdown formatting. Only use information from the excerpts above."""
 
 def get_llm():
     """
@@ -66,6 +43,13 @@ def get_llm():
     Returns:
         ChatOpenAI instance
     """
+    # Build a custom httpx client to avoid connection issues in containers
+    http_client = httpx.Client(
+        timeout=httpx.Timeout(60.0, connect=15.0),
+        follow_redirects=True,
+        transport=httpx.HTTPTransport(retries=3),
+    )
+
     # Check for OpenRouter first
     if config.USE_OPENROUTER and config.OPENROUTER_API_KEY:
         logger.info(f"Using OpenRouter with model: {config.OPENROUTER_MODEL}")
@@ -79,8 +63,7 @@ def get_llm():
                 "HTTP-Referer": "https://dr-rag-api.run.app",
                 "X-Title": "DR-RAG Homeopathy Finder",
             },
-            timeout=60,
-            max_retries=3,
+            http_client=http_client,
         )
 
     # Fall back to OpenAI
@@ -90,8 +73,7 @@ def get_llm():
             model=config.LLM_MODEL,
             temperature=config.LLM_TEMPERATURE,
             api_key=config.OPENAI_API_KEY,
-            timeout=60,
-            max_retries=3,
+            http_client=http_client,
         )
 
     raise ValueError(
