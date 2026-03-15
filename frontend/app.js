@@ -699,9 +699,11 @@ async function confirmSave() {
             citations: state.pendingSave.citations || [],
         });
         state.saved.unshift(saved);
-    } catch { state.saved.unshift({ ...state.pendingSave, name, created_at: new Date().toISOString() }); }
-    closeModal();
-    showToast('Rubric saved!', 'success');
+        closeModal();
+        showToast('Rubric saved!', 'success');
+    } catch (e) {
+        showToast(`Save failed: ${e.message}`, 'error');
+    }
 }
 
 // ─── Patients View ────────────────────────────────────────────
