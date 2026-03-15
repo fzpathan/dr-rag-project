@@ -50,6 +50,9 @@ COPY --from=builder /app/vectorstore vectorstore/
 # Copy HuggingFace model cache so it isn't re-downloaded at runtime
 COPY --from=builder /root/.cache/huggingface /root/.cache/huggingface
 
+# Create db directory so the volume mount has a target and SQLite can write
+RUN mkdir -p /app/db
+
 # Copy application source
 COPY src/ src/
 COPY api/ api/
