@@ -12,6 +12,14 @@ const state = {
     saved: [],
     pendingSave: null,
     isStreaming: false,
+    settings: {
+        show_advanced_options: true,
+        show_citations: true,
+        show_history: true,
+        show_saved_rubrics: true,
+        show_processing_time: true,
+        theme: 'default',
+    },
 };
 
 // ─── Storage ─────────────────────────────────────────────────
@@ -163,10 +171,11 @@ function showAuth(form) {
     renderAuthCard(form);
 }
 
-function showApp() {
+async function showApp() {
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
     updateSidebarUser();
+    await loadAndApplySettings();
     setupAppEvents();
     navigate('query');
 }
@@ -176,6 +185,28 @@ function doLogout() {
     state.history = [];
     state.saved = [];
     showAuth('login');
+}
+
+async function loadAndApplySettings() {
+    try {
+        const s = await apiRequest('GET', '/admin/settings');
+        if (s) state.settings = s;
+    } catch {}
+    applySettings();
+}
+
+function applySettings() {
+    const s = state.settings;
+    // Theme
+    document.body.className = s.theme && s.theme !== 'default' ? `theme-${s.theme}` : '';
+    // Show/hide nav items
+    document.querySelectorAll('.nav-btn[data-view="history"]').forEach(el =>
+        el.classList.toggle('hidden', !s.show_history));
+    document.querySelectorAll('.nav-btn[data-view="saved"]').forEach(el =>
+        el.classList.toggle('hidden', !s.show_saved_rubrics));
+    // Show admin nav for admins
+    document.querySelectorAll('.admin-only').forEach(el =>
+        el.classList.toggle('hidden', !state.user?.is_admin));
 }
 
 function updateSidebarUser() {
@@ -204,6 +235,7 @@ function navigate(view) {
         case 'query':   container.innerHTML = renderQueryView();   setupQueryEvents();   break;
         case 'history': container.innerHTML = renderHistoryView(); setupHistoryEvents(); break;
         case 'saved':   container.innerHTML = renderSavedView();   setupSavedEvents();   break;
+        case 'admin':   container.innerHTML = renderAdminView();   setupAdminEvents();   break;
     }
 }
 
@@ -219,7 +251,7 @@ function renderQueryView() {
         <textarea id="symptom-input" class="symptom-textarea"
             placeholder="Describe the patient's symptoms in detail. Include mental/emotional state, physical complaints, modalities (what makes it better or worse), time of onset, etc.&#10;&#10;Example: Patient is anxious, restless, very chilly, thirsty for small sips of water, worse at midnight, better with warmth."></textarea>
         <div>
-            <span class="options-toggle" id="options-toggle">⚙ Advanced options</span>
+            <span class="options-toggle" id="options-toggle" ${!state.settings.show_advanced_options ? 'style="display:none"' : ''}>⚙ Advanced options</span>
             <div class="options-panel" id="options-panel">
                 <div class="option-group">
                     <label>Results per source (top_k)</label>
@@ -309,9 +341,14 @@ async function submitQuery() {
                 document.getElementById('btn-save-response').addEventListener('click', () => showSaveModal(entry));
             }
 
-            if (citations.length > 0) {
+            if (citations.length > 0 && state.settings.show_citations) {
                 responseArea.insertAdjacentHTML('beforeend', renderCitationsCard(citations));
                 setupCitationToggles(responseArea);
+            }
+
+            // Hide processing time badge if disabled
+            if (!state.settings.show_processing_time) {
+                document.querySelector('.badge-time')?.remove();
             }
 
             finishStreaming(btn);
@@ -495,6 +532,114 @@ function confirmSave() {
     store.save();
     closeModal();
     showToast('Rubric saved!', 'success');
+}
+
+// ─── Admin View ───────────────────────────────────────────────
+function renderAdminView() {
+    const s = state.settings;
+    const themes = ['default', 'blue', 'purple', 'rose', 'dark'];
+    const themeLabels = { default: 'Teal', blue: 'Blue', purple: 'Purple', rose: 'Rose', dark: 'Dark' };
+
+    const toggle = (id, checked, label, desc) => `
+    <div class="setting-row">
+        <div>
+            <div class="setting-label">${label}</div>
+            <div class="setting-desc">${desc}</div>
+        </div>
+        <label class="toggle">
+            <input type="checkbox" id="${id}" ${checked ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+        </label>
+    </div>`;
+
+    return `
+    <div class="view-header">
+        <h2>Admin Panel</h2>
+        <p>Control the interface shown to all users</p>
+    </div>
+
+    <div class="card">
+        <div class="view-header" style="margin-bottom:1rem"><h2 style="font-size:1rem">UI Toggles</h2></div>
+        <div class="settings-grid">
+            ${toggle('set-advanced', s.show_advanced_options, 'Advanced Options', 'Show the top_k and source filter controls on the query page')}
+            ${toggle('set-citations', s.show_citations, 'Source Citations', 'Show the citations panel below each response')}
+            ${toggle('set-history', s.show_history, 'History', 'Show the History tab in the sidebar')}
+            ${toggle('set-saved', s.show_saved_rubrics, 'Saved Rubrics', 'Show the Saved Rubrics tab in the sidebar')}
+            ${toggle('set-timing', s.show_processing_time, 'Processing Time', 'Show the response time badge on each result')}
+        </div>
+        <div class="setting-row" style="margin-top:1rem; flex-direction:column; align-items:flex-start; gap:.75rem">
+            <div>
+                <div class="setting-label">Theme</div>
+                <div class="setting-desc">Colour theme applied to all users</div>
+            </div>
+            <div class="theme-grid">
+                ${themes.map(t => `
+                <button class="theme-btn ${s.theme === t ? 'active' : ''}" data-theme="${t}" title="${themeLabels[t]}"></button>`).join('')}
+            </div>
+        </div>
+        <button class="admin-save-btn" id="admin-save">Save Settings</button>
+    </div>
+
+    <div class="card" id="users-card">
+        <div class="view-header" style="margin-bottom:1rem"><h2 style="font-size:1rem">Registered Users</h2></div>
+        <div id="users-table-wrap"><p style="color:var(--text-muted);font-size:.9rem">Loading…</p></div>
+    </div>`;
+}
+
+function setupAdminEvents() {
+    // Theme buttons
+    let selectedTheme = state.settings.theme;
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectedTheme = btn.dataset.theme;
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Preview theme immediately
+            document.body.className = selectedTheme !== 'default' ? `theme-${selectedTheme}` : '';
+        });
+    });
+
+    // Save button
+    document.getElementById('admin-save').addEventListener('click', async () => {
+        const settings = {
+            show_advanced_options: document.getElementById('set-advanced').checked,
+            show_citations: document.getElementById('set-citations').checked,
+            show_history: document.getElementById('set-history').checked,
+            show_saved_rubrics: document.getElementById('set-saved').checked,
+            show_processing_time: document.getElementById('set-timing').checked,
+            theme: selectedTheme,
+        };
+        try {
+            await apiRequest('POST', '/admin/settings', settings);
+            state.settings = settings;
+            applySettings();
+            showToast('Settings saved!', 'success');
+        } catch (e) {
+            showToast(e.message, 'error');
+        }
+    });
+
+    // Load users
+    apiRequest('GET', '/admin/users').then(users => {
+        if (!users) return;
+        const wrap = document.getElementById('users-table-wrap');
+        if (!wrap) return;
+        wrap.innerHTML = `
+        <table class="users-table">
+            <thead><tr>
+                <th>Name</th><th>Email</th><th>Status</th><th>Role</th><th>Joined</th>
+            </tr></thead>
+            <tbody>
+                ${users.map(u => `<tr>
+                    <td>${esc(u.full_name)}</td>
+                    <td>${esc(u.email)}</td>
+                    <td><span class="pill ${u.is_active ? 'pill-active' : 'pill-inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${u.is_admin ? '<span class="pill pill-admin">Admin</span>' : 'User'}</td>
+                    <td>${fmtDate(u.created_at)}</td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+    }).catch(() => {});
 }
 
 // ─── Auth Views ───────────────────────────────────────────────

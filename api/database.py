@@ -2,7 +2,7 @@
 Database setup with SQLAlchemy.
 """
 from datetime import datetime
-from sqlalchemy import create_engine, Column, String, DateTime, Boolean
+from sqlalchemy import create_engine, Column, String, DateTime, Boolean, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import uuid
@@ -31,6 +31,7 @@ class User(Base):
     full_name = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False, server_default='0')
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -52,6 +53,13 @@ class QueryHistory(Base):
 def create_tables():
     """Create all database tables."""
     Base.metadata.create_all(bind=engine)
+    # Migrate: add is_admin column to existing databases
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
 
 
 def get_db():
