@@ -340,7 +340,16 @@ async function startRecording() {
         setMicRecording(true);
         showToast('Recording… click mic again to stop.', 'info');
     } catch (e) {
-        showToast('Microphone access denied.', 'error');
+        const name = e.name || '';
+        if (name === 'NotAllowedError') {
+            showToast('Mic blocked — allow microphone in browser AND Windows Settings → Privacy → Microphone.', 'error');
+        } else if (name === 'NotFoundError') {
+            showToast('No microphone found on this device.', 'error');
+        } else if (name === 'NotReadableError') {
+            showToast('Microphone is in use by another app. Close it and try again.', 'error');
+        } else {
+            showToast(`Mic error: ${e.name} — ${e.message}`, 'error');
+        }
     }
 }
 
