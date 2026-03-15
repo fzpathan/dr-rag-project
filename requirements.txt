@@ -1,3 +1,7 @@
+# CPU-only PyTorch (avoids downloading 2.5GB of CUDA packages on non-GPU servers)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0+cpu
+
 # Core framework
 langchain>=0.3.0
 langchain-core>=0.3.0
