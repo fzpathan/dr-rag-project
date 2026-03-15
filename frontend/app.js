@@ -10,6 +10,7 @@ const state = {
     currentView: 'query',
     history: [],
     saved: [],
+    patients: [],
     pendingSave: null,
     isStreaming: false,
     settings: {
@@ -30,14 +31,12 @@ const voice = {
     isRecording: false,
 };
 
-// ─── Storage ─────────────────────────────────────────────────
+// ─── Storage (tokens only — history/saved now server-side) ───
 const store = {
     save() {
         try {
             localStorage.setItem('drrag_tokens', JSON.stringify({ access: state.accessToken, refresh: state.refreshToken }));
             localStorage.setItem('drrag_user', JSON.stringify(state.user));
-            localStorage.setItem('drrag_history', JSON.stringify(state.history.slice(0, 50)));
-            localStorage.setItem('drrag_saved', JSON.stringify(state.saved));
         } catch (e) { console.error('Storage save error:', e); }
     },
     load() {
@@ -45,8 +44,6 @@ const store = {
             const tokens = JSON.parse(localStorage.getItem('drrag_tokens') || 'null');
             if (tokens) { state.accessToken = tokens.access; state.refreshToken = tokens.refresh; }
             state.user = JSON.parse(localStorage.getItem('drrag_user') || 'null');
-            state.history = JSON.parse(localStorage.getItem('drrag_history') || '[]');
-            state.saved = JSON.parse(localStorage.getItem('drrag_saved') || '[]');
         } catch (e) { console.error('Storage load error:', e); }
     },
     clear() {
@@ -184,6 +181,10 @@ async function showApp() {
     document.getElementById('app-screen').classList.remove('hidden');
     updateSidebarUser();
     await loadAndApplySettings();
+    // Load persistent data from server
+    try { state.history = await apiRequest('GET', '/history'); } catch { state.history = []; }
+    try { state.saved = await apiRequest('GET', '/saved'); } catch { state.saved = []; }
+    try { state.patients = await apiRequest('GET', '/patients'); } catch { state.patients = []; }
     setupAppEvents();
     navigate('query');
 }
@@ -192,6 +193,7 @@ function doLogout() {
     store.clear();
     state.history = [];
     state.saved = [];
+    state.patients = [];
     showAuth('login');
 }
 
@@ -243,10 +245,11 @@ function navigate(view) {
     );
     const container = document.getElementById('main-content');
     switch (view) {
-        case 'query':   container.innerHTML = renderQueryView();   setupQueryEvents();   break;
-        case 'history': container.innerHTML = renderHistoryView(); setupHistoryEvents(); break;
-        case 'saved':   container.innerHTML = renderSavedView();   setupSavedEvents();   break;
-        case 'admin':   container.innerHTML = renderAdminView();   setupAdminEvents();   break;
+        case 'query':    container.innerHTML = renderQueryView();    setupQueryEvents();    break;
+        case 'history':  container.innerHTML = renderHistoryView();  setupHistoryEvents();  break;
+        case 'saved':    container.innerHTML = renderSavedView();    setupSavedEvents();    break;
+        case 'patients': container.innerHTML = renderPatientsView(); setupPatientsEvents(); break;
+        case 'admin':    container.innerHTML = renderAdminView();    setupAdminEvents();    break;
     }
 }
 
@@ -475,9 +478,15 @@ async function submitQuery() {
                 cached: data.cached,
                 created_at: new Date().toISOString(),
             };
-            state.history.unshift(entry);
-            if (state.history.length > 50) state.history.pop();
-            store.save();
+            // History is auto-saved server-side by the stream endpoint;
+            // just refresh local state so the History tab stays in sync.
+            try {
+                const saved = await apiRequest('POST', '/history', entry);
+                state.history.unshift(saved);
+                if (state.history.length > 50) state.history.pop();
+            } catch {
+                state.history.unshift(entry);
+            }
 
             const card = document.getElementById('active-response');
             if (card) {
@@ -591,11 +600,12 @@ function setupHistoryEvents() {
         })
     );
     document.querySelectorAll('.btn-delete-hist').forEach(btn =>
-        btn.addEventListener('click', e => {
+        btn.addEventListener('click', async e => {
             e.stopPropagation();
             if (!confirm('Delete this query from history?')) return;
+            const item = state.history[Number(btn.dataset.idx)];
+            try { await apiRequest('DELETE', `/history/${item.id}`); } catch {}
             state.history.splice(Number(btn.dataset.idx), 1);
-            localStorage.setItem('drrag_history', JSON.stringify(state.history));
             navigate('history');
         })
     );
@@ -639,10 +649,11 @@ function setupSavedEvents() {
         })
     );
     document.querySelectorAll('.btn-del-saved').forEach(btn =>
-        btn.addEventListener('click', e => {
+        btn.addEventListener('click', async e => {
             e.stopPropagation();
+            const item = state.saved[parseInt(btn.dataset.idx)];
+            try { await apiRequest('DELETE', `/saved/${item.id}`); } catch {}
             state.saved.splice(parseInt(btn.dataset.idx), 1);
-            store.save();
             showToast('Rubric deleted.', 'info');
             navigate('saved');
         })
@@ -685,10 +696,173 @@ function closeModal() {
 function confirmSave() {
     const name = document.getElementById('rubric-name').value.trim();
     if (!name) { showToast('Please enter a name.', 'error'); return; }
-    state.saved.unshift({ ...state.pendingSave, name, saved_at: new Date().toISOString() });
-    store.save();
+    try {
+        const saved = await apiRequest('POST', '/saved', {
+            name,
+            question: state.pendingSave.question,
+            answer: state.pendingSave.answer,
+            citations: state.pendingSave.citations || [],
+        });
+        state.saved.unshift(saved);
+    } catch { state.saved.unshift({ ...state.pendingSave, name, created_at: new Date().toISOString() }); }
     closeModal();
     showToast('Rubric saved!', 'success');
+}
+
+// ─── Patients View ────────────────────────────────────────────
+function renderPatientsView() {
+    const patients = state.patients || [];
+    return `
+    <div class="view-header">
+        <div><h2>Patients</h2><p>${patients.length} patient${patients.length !== 1 ? 's' : ''}</p></div>
+        <button class="btn-primary" id="btn-new-patient">+ New Patient</button>
+    </div>
+    <input type="text" id="patient-search" class="modal-input" placeholder="Search by name…" style="margin-bottom:12px">
+    <div id="patient-list">
+    ${patients.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">👤</div><p>No patients yet. Add your first patient.</p></div>`
+        : patients.map((p, i) => `
+        <div class="list-item" style="cursor:pointer">
+            <div class="list-item-header" data-patient-idx="${i}">
+                <div>
+                    <div class="list-item-title">${esc(p.name)}</div>
+                    <div class="list-item-subtitle">${[p.gender, p.date_of_birth].filter(Boolean).join(' · ')}</div>
+                </div>
+                <div class="list-item-actions" style="flex-direction:row;gap:8px;align-items:center">
+                    <button class="btn-secondary btn-view-patient" data-patient-id="${p.id}" data-patient-idx="${i}">View</button>
+                    <button class="btn-secondary btn-danger btn-del-patient" data-patient-id="${p.id}" data-patient-idx="${i}">🗑</button>
+                </div>
+            </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Patient detail modal -->
+    <div id="patient-detail" class="hidden" style="margin-top:16px"></div>
+
+    <!-- Patient form modal -->
+    <div id="patient-form-modal" class="hidden" style="
+        position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000">
+        <div class="modal-card" style="width:100%;max-width:480px;padding:24px">
+            <h3 id="patient-form-title">New Patient</h3>
+            <input type="hidden" id="pf-id">
+            <div class="form-group"><label>Full Name *</label><input type="text" id="pf-name" class="modal-input" placeholder="Patient name"></div>
+            <div class="form-group"><label>Date of Birth</label><input type="date" id="pf-dob" class="modal-input"></div>
+            <div class="form-group"><label>Gender</label>
+                <select id="pf-gender" class="modal-input">
+                    <option value="">— select —</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Contact</label><input type="text" id="pf-contact" class="modal-input" placeholder="Phone or email"></div>
+            <div class="form-group"><label>Notes</label><textarea id="pf-notes" class="modal-input" rows="3" placeholder="Chief complaint, constitutional notes…"></textarea></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="pf-cancel">Cancel</button>
+                <button class="btn-confirm" id="pf-save">Save Patient</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function setupPatientsEvents() {
+    // New patient button
+    document.getElementById('btn-new-patient')?.addEventListener('click', () => openPatientForm(null));
+
+    // Search
+    document.getElementById('patient-search')?.addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll('#patient-list .list-item').forEach(el => {
+            const name = el.querySelector('.list-item-title')?.textContent?.toLowerCase() || '';
+            el.style.display = name.includes(q) ? '' : 'none';
+        });
+    });
+
+    // View patient queries
+    document.querySelectorAll('.btn-view-patient').forEach(btn =>
+        btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            const id = btn.dataset.patientId;
+            const idx = btn.dataset.patientIdx;
+            const p = state.patients[idx];
+            try {
+                const queries = await apiRequest('GET', `/patients/${id}/queries`);
+                document.getElementById('patient-detail').classList.remove('hidden');
+                document.getElementById('patient-detail').innerHTML = `
+                    <div class="view-header" style="margin-top:0">
+                        <h3>${esc(p.name)} — Query History</h3>
+                        <button class="btn-secondary btn-edit-patient" data-patient-idx="${idx}">✏️ Edit</button>
+                    </div>
+                    ${queries.length === 0
+                        ? '<p style="color:var(--text-secondary)">No queries linked to this patient yet.</p>'
+                        : queries.map(q => `
+                        <div class="list-item" style="margin-bottom:8px">
+                            <div class="list-item-header">
+                                <div class="list-item-title">${esc(truncate(q.question, 80))}</div>
+                                <div class="list-item-date">${fmtDate(q.created_at)}</div>
+                            </div>
+                        </div>`).join('')}`;
+                document.querySelector('.btn-edit-patient')?.addEventListener('click', () => openPatientForm(state.patients[idx]));
+            } catch { showToast('Failed to load patient queries.', 'error'); }
+        })
+    );
+
+    // Delete patient
+    document.querySelectorAll('.btn-del-patient').forEach(btn =>
+        btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            if (!confirm('Delete this patient and all linked data?')) return;
+            try {
+                await apiRequest('DELETE', `/patients/${btn.dataset.patientId}`);
+                state.patients.splice(parseInt(btn.dataset.patientIdx), 1);
+                navigate('patients');
+                showToast('Patient deleted.', 'info');
+            } catch { showToast('Failed to delete patient.', 'error'); }
+        })
+    );
+
+    // Patient form
+    document.getElementById('pf-cancel')?.addEventListener('click', () =>
+        document.getElementById('patient-form-modal').classList.add('hidden'));
+    document.getElementById('pf-save')?.addEventListener('click', savePatientForm);
+}
+
+function openPatientForm(patient) {
+    const modal = document.getElementById('patient-form-modal');
+    document.getElementById('patient-form-title').textContent = patient ? 'Edit Patient' : 'New Patient';
+    document.getElementById('pf-id').value = patient?.id || '';
+    document.getElementById('pf-name').value = patient?.name || '';
+    document.getElementById('pf-dob').value = patient?.date_of_birth || '';
+    document.getElementById('pf-gender').value = patient?.gender || '';
+    document.getElementById('pf-contact').value = patient?.contact || '';
+    document.getElementById('pf-notes').value = patient?.notes || '';
+    modal.classList.remove('hidden');
+}
+
+async function savePatientForm() {
+    const name = document.getElementById('pf-name').value.trim();
+    if (!name) { showToast('Name is required.', 'error'); return; }
+    const id = document.getElementById('pf-id').value;
+    const body = {
+        name,
+        date_of_birth: document.getElementById('pf-dob').value || null,
+        gender: document.getElementById('pf-gender').value || null,
+        contact: document.getElementById('pf-contact').value.trim() || null,
+        notes: document.getElementById('pf-notes').value.trim() || null,
+    };
+    try {
+        if (id) {
+            const updated = await apiRequest('PUT', `/patients/${id}`, body);
+            const idx = state.patients.findIndex(p => p.id === id);
+            if (idx >= 0) state.patients[idx] = updated;
+        } else {
+            const created = await apiRequest('POST', '/patients', body);
+            state.patients.unshift(created);
+        }
+        document.getElementById('patient-form-modal').classList.add('hidden');
+        navigate('patients');
+        showToast('Patient saved!', 'success');
+    } catch { showToast('Failed to save patient.', 'error'); }
 }
 
 // ─── Admin View ───────────────────────────────────────────────

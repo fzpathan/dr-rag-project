@@ -1,9 +1,11 @@
 """
 Query endpoints for RAG operations.
 """
+import json
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 
 from api.models.query import (
     QueryRequest,
@@ -15,8 +17,27 @@ from api.models.query import (
 from api.services.rag_service import get_rag_service, RAGService
 from api.services.cache_service import query_cache
 from api.dependencies import get_current_user
+from api.database import get_db, QueryHistory
 
 router = APIRouter(prefix="/query", tags=["Query"])
+
+
+def _save_history(db: Session, user_id: str, result: dict, cached: bool):
+    """Persist a completed query to the database."""
+    try:
+        item = QueryHistory(
+            user_id=user_id,
+            question=result["question"],
+            answer=result["answer"],
+            citations_json=json.dumps(result.get("citations", [])),
+            sources_used=json.dumps(result.get("sources_used", [])),
+            cached=cached,
+            processing_time_ms=str(result.get("processing_time_ms", 0)),
+        )
+        db.add(item)
+        db.commit()
+    except Exception:
+        db.rollback()
 
 
 @router.post("", response_model=QueryResponse)
@@ -24,6 +45,7 @@ async def query_remedy(
     request: QueryRequest,
     current_user=Depends(get_current_user),
     rag_service: RAGService = Depends(get_rag_service),
+    db: Session = Depends(get_db),
 ):
     """
     Submit a remedy query to the RAG system.
@@ -39,7 +61,7 @@ async def query_remedy(
     cached_response = query_cache.get(request.question, request.source_filter)
 
     if cached_response:
-        return QueryResponse(
+        response = QueryResponse(
             id=cached_response["id"],
             question=request.question,
             answer=cached_response["answer"],
@@ -49,6 +71,8 @@ async def query_remedy(
             cached=True,
             created_at=datetime.utcnow(),
         )
+        _save_history(db, current_user.id, cached_response | {"question": request.question}, cached=True)
+        return response
 
     try:
         # Execute RAG query
@@ -60,6 +84,8 @@ async def query_remedy(
 
         # Cache the result
         query_cache.set(request.question, result, request.source_filter)
+
+        _save_history(db, current_user.id, result, cached=False)
 
         return QueryResponse(
             id=result["id"],
@@ -89,6 +115,7 @@ async def query_remedy_stream(
     request: QueryRequest,
     current_user=Depends(get_current_user),
     rag_service: RAGService = Depends(get_rag_service),
+    db: Session = Depends(get_db),
 ):
     """
     Submit a remedy query with Server-Sent Events streaming.
@@ -100,14 +127,37 @@ async def query_remedy_stream(
     """
     try:
         clean_question = request.question
+        user_id = current_user.id
 
         def event_generator():
+            full_text = ""
+            citations_data = []
+            done_data = {}
             for chunk in rag_service.query_stream(
                 question=clean_question,
                 source_filter=request.source_filter,
                 top_k=request.top_k,
             ):
                 yield f"data: {chunk}\n\n"
+                try:
+                    data = json.loads(chunk)
+                    if data.get("type") == "citations":
+                        citations_data = data.get("citations", [])
+                    elif data.get("type") == "token":
+                        full_text += data.get("content", "")
+                    elif data.get("type") == "done":
+                        done_data = data
+                except Exception:
+                    pass
+            # Save completed query to history
+            if full_text:
+                _save_history(db, user_id, {
+                    "question": clean_question,
+                    "answer": full_text,
+                    "citations": citations_data,
+                    "sources_used": done_data.get("sources_used", []),
+                    "processing_time_ms": done_data.get("processing_time_ms", 0),
+                }, cached=done_data.get("cached", False))
 
         return StreamingResponse(
             event_generator(),

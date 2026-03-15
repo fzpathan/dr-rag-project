@@ -3,7 +3,7 @@
  */
 
 // Production server — update this if the server IP/domain changes
-const PRODUCTION_URL = 'https://13.233.129.108/api/v1';
+const PRODUCTION_URL = 'http://13.233.129.108/api/v1';
 
 // Development uses HTTP to avoid self-signed SSL cert rejection on Android emulator
 const DEVELOPMENT_URL = 'http://13.233.129.108/api/v1';
@@ -32,6 +32,11 @@ export const endpoints = {
 
   // Admin / settings
   mySettings: '/admin/my-settings',
+
+  // Persistent data
+  history: '/history',
+  saved: '/saved',
+  patients: '/patients',
 
   // Health
   health: '/health',

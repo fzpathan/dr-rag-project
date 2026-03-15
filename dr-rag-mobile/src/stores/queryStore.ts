@@ -132,15 +132,39 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
 
   loadHistory: async () => {
     try {
-      const raw = await AsyncStorage.getItem(HISTORY_STORAGE_KEY);
-      if (raw) {
-        const items: QueryHistoryItem[] = JSON.parse(raw);
-        set({ history: items });
+      const accessToken = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+      const res = await fetch(`${API_BASE_URL}${endpoints.history}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.ok) {
+        const items = await res.json();
+        const mapped: QueryHistoryItem[] = items.map((i: any) => ({
+          id: i.id,
+          question: i.question,
+          answer: i.answer,
+          timestamp: new Date(i.created_at),
+          cached: i.cached,
+        }));
+        set({ history: mapped });
+        await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(mapped));
+        return;
       }
+    } catch {}
+    // Fallback to AsyncStorage
+    try {
+      const raw = await AsyncStorage.getItem(HISTORY_STORAGE_KEY);
+      if (raw) set({ history: JSON.parse(raw) });
     } catch {}
   },
 
   deleteHistoryItem: async (id: string) => {
+    try {
+      const accessToken = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+      await fetch(`${API_BASE_URL}${endpoints.history}/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+    } catch {}
     const updated = get().history.filter((item) => item.id !== id);
     set({ history: updated });
     await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
@@ -174,6 +198,7 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
 
         set({ currentResponse: response, streamingText: '' });
 
+        // Save to server-side history
         const historyItem: QueryHistoryItem = {
           id: response.id,
           question: response.question,
@@ -181,6 +206,25 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
           timestamp: new Date(),
           cached: response.cached,
         };
+        try {
+          const saved = await fetch(`${API_BASE_URL}${endpoints.history}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+            body: JSON.stringify({
+              id: response.id,
+              question: response.question,
+              answer: response.answer,
+              citations: citations,
+              sources_used: response.sources_used,
+              cached: response.cached,
+              processing_time_ms: String(response.processing_time_ms),
+            }),
+          });
+          if (saved.ok) {
+            const serverItem = await saved.json();
+            historyItem.id = serverItem.id;
+          }
+        } catch {}
 
         const current = get().history;
         const updated = [historyItem, ...current].slice(0, MAX_HISTORY_ITEMS);

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import api_config
 from api.database import create_tables
-from api.routers import auth_router, query_router, health_router, admin_router, voice_router
+from api.routers import auth_router, query_router, health_router, admin_router, voice_router, history_router, saved_router, patients_router
 from api.services.rag_service import get_rag_service
 
 # Configure logging
@@ -100,6 +100,9 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(query_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(voice_router, prefix="/api/v1")
+app.include_router(history_router, prefix="/api/v1")
+app.include_router(saved_router, prefix="/api/v1")
+app.include_router(patients_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

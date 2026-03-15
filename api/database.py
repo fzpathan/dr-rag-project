@@ -38,28 +38,70 @@ class User(Base):
 
 
 class QueryHistory(Base):
-    """Query history for users."""
+    """Query history per user — server-side persistent storage."""
     __tablename__ = "query_history"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, index=True, nullable=False)
-    question = Column(String, nullable=False)
-    answer = Column(String, nullable=False)
-    sources_used = Column(String)  # JSON string
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    citations_json = Column(Text, nullable=True)   # JSON array of Citation objects
+    sources_used = Column(Text, nullable=True)      # JSON array of source names
     cached = Column(Boolean, default=False)
-    processing_time_ms = Column(String)
+    processing_time_ms = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SavedRubric(Base):
+    """Saved rubrics (bookmarked responses) per user."""
+    __tablename__ = "saved_rubrics"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, index=True, nullable=False)
+    name = Column(String, nullable=False)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    citations_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Patient(Base):
+    """Patient records — visible only to the creating doctor."""
+    __tablename__ = "patients"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, index=True, nullable=False)  # owning doctor
+    name = Column(String, nullable=False)
+    date_of_birth = Column(String, nullable=True)
+    gender = Column(String, nullable=True)
+    contact = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class PatientQuery(Base):
+    """Links a query history entry to a patient."""
+    __tablename__ = "patient_queries"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    patient_id = Column(String, index=True, nullable=False)
+    query_history_id = Column(String, nullable=False)
+    user_id = Column(String, index=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
 def create_tables():
-    """Create all database tables."""
+    """Create all database tables, run migrations for existing DBs."""
     Base.metadata.create_all(bind=engine)
-    # Migrations for existing databases
+    # Migrations for existing databases — safe to re-run, errors are swallowed
+    migrations = [
+        "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN settings_json TEXT DEFAULT NULL",
+        "ALTER TABLE query_history ADD COLUMN citations_json TEXT DEFAULT NULL",
+    ]
     with engine.connect() as conn:
-        for stmt in [
-            "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0",
-            "ALTER TABLE users ADD COLUMN settings_json TEXT DEFAULT NULL",
-        ]:
+        for stmt in migrations:
             try:
                 conn.execute(text(stmt))
                 conn.commit()
