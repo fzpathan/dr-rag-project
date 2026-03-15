@@ -162,6 +162,40 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 
 /* ─── Query View ───────────────────────────────────────────── */
 .card label { display: block; font-weight: 600; margin-bottom: .625rem; font-size: .95rem; }
+
+.textarea-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: .625rem; }
+.textarea-label-row label { margin-bottom: 0; }
+.voice-controls { display: flex; align-items: center; gap: .5rem; }
+.voice-lang-select {
+    font-size: .8rem;
+    padding: .25rem .5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.voice-lang-select:focus { outline: none; border-color: var(--primary); }
+.btn-mic {
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+}
+.btn-mic:hover:not(:disabled) { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.btn-mic:disabled { opacity: .4; cursor: not-allowed; }
+.btn-mic.recording {
+    background: #fee2e2; color: #ef4444; border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,.2);
+    animation: mic-pulse 1s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(239,68,68,.2); }
+    50% { box-shadow: 0 0 0 6px rgba(239,68,68,.1); }
+}
 .symptom-textarea {
     width: 100%;
     min-height: 120px;

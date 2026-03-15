@@ -8,9 +8,11 @@ services:
       - "8000:8000"
     volumes:
       - db_data:/app/db
+      - whisper_models:/app/whisper_models
     environment:
       - DATABASE_URL=sqlite:////app/db/api_users.db
       - PORT=8000
+      - WHISPER_CACHE_DIR=/app/whisper_models
 
   nginx:
     image: nginx:alpine
@@ -38,6 +40,7 @@ services:
 
 volumes:
   db_data:
+  whisper_models:
   certbot_etc:
   certbot_var:
   webroot:

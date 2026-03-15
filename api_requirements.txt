@@ -18,6 +18,9 @@ email-validator>=2.0.0
 # File uploads
 python-multipart>=0.0.6
 
+# Voice transcription (Hindi / Marathi → English)
+faster-whisper>=1.0.0
+
 # Note: The following are already in requirements.txt
 # and will be used by the RAG service:
 # - langchain

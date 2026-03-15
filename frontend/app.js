@@ -22,6 +22,12 @@ const state = {
     },
 };
 
+const voice = {
+    mediaRecorder: null,
+    chunks: [],
+    isRecording: false,
+};
+
 // ─── Storage ─────────────────────────────────────────────────
 const store = {
     save() {
@@ -247,9 +253,22 @@ function renderQueryView() {
         <p>Describe the patient's symptoms to find matching homeopathic remedies</p>
     </div>
     <div class="card">
-        <label for="symptom-input">Patient Symptoms</label>
+        <div class="textarea-label-row">
+            <label for="symptom-input">Patient Symptoms</label>
+            <div class="voice-controls">
+                <select id="voice-lang" class="voice-lang-select" title="Voice input language">
+                    <option value="auto">Auto-detect</option>
+                    <option value="hi">Hindi</option>
+                    <option value="mr">Marathi</option>
+                    <option value="en">English</option>
+                </select>
+                <button class="btn-mic" id="btn-mic" title="Record voice input (translated to English)">
+                    <svg id="mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+            </div>
+        </div>
         <textarea id="symptom-input" class="symptom-textarea"
-            placeholder="Describe the patient's symptoms in detail. Include mental/emotional state, physical complaints, modalities (what makes it better or worse), time of onset, etc.&#10;&#10;Example: Patient is anxious, restless, very chilly, thirsty for small sips of water, worse at midnight, better with warmth."></textarea>
+            placeholder="Describe the patient's symptoms in detail. Include mental/emotional state, physical complaints, modalities (what makes it better or worse), time of onset, etc.&#10;&#10;Example: Patient is anxious, restless, very chilly, thirsty for small sips of water, worse at midnight, better with warmth.&#10;&#10;Or use the mic button to speak in Hindi / Marathi — text will be automatically translated to English."></textarea>
         <div>
             <span class="options-toggle" id="options-toggle" ${!state.settings.show_advanced_options ? 'style="display:none"' : ''}>⚙ Advanced options</span>
             <div class="options-panel" id="options-panel">
@@ -277,6 +296,120 @@ function setupQueryEvents() {
     document.getElementById('symptom-input').addEventListener('keydown', e => {
         if (e.key === 'Enter' && e.ctrlKey) submitQuery();
     });
+    setupVoiceEvents();
+}
+
+function setupVoiceEvents() {
+    const btn = document.getElementById('btn-mic');
+    if (!btn) return;
+
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+        btn.disabled = true;
+        btn.title = 'Voice input not supported in this browser';
+        return;
+    }
+
+    btn.addEventListener('click', () => {
+        if (voice.isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
+}
+
+async function startRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        voice.chunks = [];
+        voice.mediaRecorder = new MediaRecorder(stream);
+        voice.isRecording = true;
+
+        voice.mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) voice.chunks.push(e.data);
+        };
+
+        voice.mediaRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(voice.chunks, { type: 'audio/webm' });
+            voice.chunks = [];
+            await sendAudioForTranscription(blob);
+        };
+
+        voice.mediaRecorder.start();
+        setMicRecording(true);
+        showToast('Recording… click mic again to stop.', 'info');
+    } catch (e) {
+        showToast('Microphone access denied.', 'error');
+    }
+}
+
+function stopRecording() {
+    if (voice.mediaRecorder && voice.isRecording) {
+        voice.mediaRecorder.stop();
+        voice.isRecording = false;
+        setMicRecording(false);
+    }
+}
+
+function setMicRecording(on) {
+    const btn = document.getElementById('btn-mic');
+    if (!btn) return;
+    if (on) {
+        btn.classList.add('recording');
+        btn.title = 'Recording… click to stop';
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
+    } else {
+        btn.classList.remove('recording');
+        btn.title = 'Record voice input (translated to English)';
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+    }
+}
+
+async function sendAudioForTranscription(blob) {
+    const btn = document.getElementById('btn-mic');
+    const lang = document.getElementById('voice-lang')?.value || 'auto';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="loading-pulse" style="scale:.7"><span></span><span></span><span></span></div>`;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('file', blob, 'recording.webm');
+        formData.append('language', lang);
+
+        const headers = {};
+        if (state.accessToken) headers['Authorization'] = `Bearer ${state.accessToken}`;
+
+        const res = await fetch(`${API}/voice/transcribe`, {
+            method: 'POST',
+            headers,
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const j = await res.json().catch(() => ({}));
+            throw new Error(j.detail || `Transcription failed (${res.status})`);
+        }
+
+        const data = await res.json();
+        const textarea = document.getElementById('symptom-input');
+        if (textarea && data.text) {
+            textarea.value = (textarea.value ? textarea.value + ' ' : '') + data.text;
+            textarea.focus();
+            const langLabel = data.detected_language ? ` (detected: ${data.detected_language})` : '';
+            showToast(`Transcribed${langLabel}`, 'success');
+        }
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            setMicRecording(false);
+        }
+    }
 }
 
 async function submitQuery() {

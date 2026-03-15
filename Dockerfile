@@ -34,9 +34,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install only runtime dependencies
+# Install only runtime dependencies (ffmpeg required by faster-whisper for audio decoding)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libgomp1 ca-certificates && \
+    apt-get install -y --no-install-recommends libgomp1 ca-certificates ffmpeg && \
     update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
