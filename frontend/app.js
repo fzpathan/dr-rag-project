@@ -551,10 +551,10 @@ function renderHistoryView() {
             <div class="list-item-date">${fmtDate(item.created_at)}</div>
         </div>
         <div class="list-item-body" id="hist-${i}">
-            <div class="md">${marked.parse(item.answer)}</div>
+            <div class="md">${marked.parse(getDisplayText(item.answer))}</div>
             <div class="list-item-actions">
                 <button class="btn-secondary btn-save" data-idx="${i}">🔖 Save as Rubric</button>
-                ${item.citations && item.citations.length
+                ${item.citations && item.citations.length && state.settings.show_citations
                     ? `<button class="btn-secondary btn-show-cit" data-idx="${i}">📚 Citations (${item.citations.length})</button>`
                     : ''}
             </div>
@@ -605,8 +605,8 @@ function renderSavedView() {
             <div class="list-item-date">${fmtDate(item.saved_at)}</div>
         </div>
         <div class="list-item-body" id="saved-${i}">
-            <div class="md">${marked.parse(item.answer)}</div>
-            ${item.citations && item.citations.length
+            <div class="md">${marked.parse(getDisplayText(item.answer))}</div>
+            ${item.citations && item.citations.length && state.settings.show_citations
                 ? `<div style="margin-top:.75rem">${renderCitationsCard(item.citations)}</div>`
                 : ''}
             <div class="list-item-actions">
