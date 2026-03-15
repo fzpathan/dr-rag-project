@@ -561,6 +561,7 @@ function renderHistoryView() {
                 ${item.citations && item.citations.length && state.settings.show_citations
                     ? `<button class="btn-secondary btn-show-cit" data-idx="${i}">📚 Citations (${item.citations.length})</button>`
                     : ''}
+                <button class="btn-secondary btn-delete-hist" data-idx="${i}" style="color:#c0392b;">🗑 Delete</button>
             </div>
             <div id="hist-cit-${i}"></div>
         </div>
@@ -587,6 +588,15 @@ function setupHistoryEvents() {
             if (container.innerHTML) { container.innerHTML = ''; return; }
             container.innerHTML = renderCitationsCard(state.history[idx].citations);
             setupCitationToggles(container);
+        })
+    );
+    document.querySelectorAll('.btn-delete-hist').forEach(btn =>
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (!confirm('Delete this query from history?')) return;
+            state.history.splice(Number(btn.dataset.idx), 1);
+            localStorage.setItem('drrag_history', JSON.stringify(state.history));
+            navigate('history');
         })
     );
 }

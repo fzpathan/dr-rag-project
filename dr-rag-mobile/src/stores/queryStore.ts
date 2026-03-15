@@ -1,6 +1,6 @@
 /**
  * Query state store using Zustand.
- * Uses SSE streaming endpoint for real-time token output.
+ * Uses XHR onprogress for SSE streaming — fully supported in RN Hermes release builds.
  */
 
 import { create } from 'zustand';
@@ -27,6 +27,92 @@ interface QueryStore {
   clearResponse: () => void;
   clearError: () => void;
   loadHistory: () => Promise<void>;
+  deleteHistoryItem: (id: string) => Promise<void>;
+}
+
+/** Parse SSE lines from a raw text chunk, returning updated state. */
+function parseSSEChunk(
+  chunk: string,
+  fullText: string,
+  citations: any[],
+  doneData: any,
+  onToken: (text: string) => void,
+): { fullText: string; citations: any[]; doneData: any } {
+  const lines = chunk.split('\n');
+  for (const line of lines) {
+    if (!line.startsWith('data: ')) continue;
+    try {
+      const data = JSON.parse(line.slice(6));
+      if (data.type === 'citations') {
+        citations = data.citations || [];
+      } else if (data.type === 'token') {
+        fullText += data.content || '';
+        onToken(fullText);
+      } else if (data.type === 'done') {
+        doneData = data;
+      }
+    } catch {}
+  }
+  return { fullText, citations, doneData };
+}
+
+/** Stream SSE via XMLHttpRequest.onprogress — works in RN Hermes release builds. */
+function streamViaXHR(
+  url: string,
+  body: string,
+  token: string,
+  onToken: (text: string) => void,
+  onFirstChunk: () => void,
+): Promise<{ fullText: string; citations: any[]; doneData: any }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    let fullText = '';
+    let citations: any[] = [];
+    let doneData: any = null;
+    let lastIndex = 0;
+    let firstChunkFired = false;
+
+    xhr.onprogress = () => {
+      if (!firstChunkFired) {
+        firstChunkFired = true;
+        onFirstChunk();
+      }
+      const chunk = xhr.responseText.slice(lastIndex);
+      lastIndex = xhr.responseText.length;
+      const parsed = parseSSEChunk(chunk, fullText, citations, doneData, onToken);
+      fullText = parsed.fullText;
+      citations = parsed.citations;
+      doneData = parsed.doneData;
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 400) {
+        try {
+          const j = JSON.parse(xhr.responseText);
+          reject(new Error(j.detail || `Request failed (${xhr.status})`));
+        } catch {
+          reject(new Error(`Request failed (${xhr.status})`));
+        }
+        return;
+      }
+      // Parse any remaining buffered text
+      const remaining = xhr.responseText.slice(lastIndex);
+      if (remaining) {
+        const parsed = parseSSEChunk(remaining, fullText, citations, doneData, onToken);
+        fullText = parsed.fullText;
+        citations = parsed.citations;
+        doneData = parsed.doneData;
+      }
+      resolve({ fullText, citations, doneData });
+    };
+
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(body);
+  });
 }
 
 export const useQueryStore = create<QueryStore>((set, get) => ({
@@ -54,61 +140,26 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
     } catch {}
   },
 
+  deleteHistoryItem: async (id: string) => {
+    const updated = get().history.filter((item) => item.id !== id);
+    set({ history: updated });
+    await AsyncStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+  },
+
   submitQuery: async (request: QueryRequest) => {
     set({ isStreaming: true, isLoading: true, error: null, streamingText: '', currentResponse: null });
 
     try {
-      const accessToken = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
-      const res = await fetch(`${API_BASE_URL}${endpoints.queryStream}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(request),
-      });
+      const accessToken = (await AsyncStorage.getItem(ACCESS_TOKEN_KEY)) || '';
 
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.detail || `Request failed (${res.status})`);
-      }
+      const { fullText, citations, doneData } = await streamViaXHR(
+        `${API_BASE_URL}${endpoints.queryStream}`,
+        JSON.stringify(request),
+        accessToken,
+        (text) => set({ streamingText: text, isLoading: false }),
+        () => set({ isLoading: false }),
+      );
 
-      // Read SSE stream
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error('Streaming not supported');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullText = '';
-      let citations: any[] = [];
-      let doneData: any = null;
-
-      set({ isLoading: false });
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.type === 'citations') {
-              citations = data.citations || [];
-            } else if (data.type === 'token') {
-              fullText += data.content || '';
-              set({ streamingText: fullText });
-            } else if (data.type === 'done') {
-              doneData = data;
-            }
-          } catch {}
-        }
-      }
-
-      // Build full response object
       if (doneData || fullText) {
         const response: QueryResponse = {
           id: doneData?.id || String(Date.now()),
@@ -123,7 +174,6 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
 
         set({ currentResponse: response, streamingText: '' });
 
-        // Persist to history
         const historyItem: QueryHistoryItem = {
           id: response.id,
           question: response.question,

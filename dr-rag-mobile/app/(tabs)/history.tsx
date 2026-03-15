@@ -3,8 +3,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { Text, Divider } from 'react-native-paper';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { Text, Divider, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
@@ -13,7 +13,7 @@ import { useQueryStore } from '../../src/stores/queryStore';
 import type { QueryHistoryItem } from '../../src/types/query';
 
 export default function HistoryScreen() {
-  const { history, loadHistory } = useQueryStore();
+  const { history, loadHistory, deleteHistoryItem } = useQueryStore();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,11 +56,27 @@ export default function HistoryScreen() {
           </View>
           <View style={styles.itemHeaderRight}>
             <Text style={styles.date}>{fmtDate(item.timestamp)}</Text>
-            <MaterialCommunityIcons
-              name={expanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={colors.textSecondary}
-            />
+            <View style={styles.itemHeaderActions}>
+              <MaterialCommunityIcons
+                name={expanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={colors.textSecondary}
+              />
+              <IconButton
+                icon="delete-outline"
+                size={18}
+                iconColor={colors.error}
+                style={styles.deleteBtn}
+                onPress={() => Alert.alert(
+                  'Delete Query',
+                  'Remove this query from history?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: () => deleteHistoryItem(item.id) },
+                  ]
+                )}
+              />
+            </View>
           </View>
         </TouchableOpacity>
 
@@ -174,6 +190,14 @@ const styles = StyleSheet.create({
   itemHeaderRight: {
     alignItems: 'flex-end',
     gap: 4,
+  },
+  itemHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteBtn: {
+    margin: 0,
+    marginLeft: 2,
   },
   date: {
     fontSize: 11,
