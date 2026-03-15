@@ -5,9 +5,8 @@
 // Production server — update this if the server IP/domain changes
 const PRODUCTION_URL = 'https://13.233.129.108/api/v1';
 
-// During local development, override with your machine's LAN IP
-// e.g. 'http://192.168.1.x:8000/api/v1'
-const DEVELOPMENT_URL = PRODUCTION_URL;
+// Development uses HTTP to avoid self-signed SSL cert rejection on Android emulator
+const DEVELOPMENT_URL = 'http://13.233.129.108/api/v1';
 
 export const API_BASE_URL = __DEV__ ? DEVELOPMENT_URL : PRODUCTION_URL;
 
