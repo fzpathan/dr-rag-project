@@ -13,6 +13,7 @@ const state = {
     pendingSave: null,
     isStreaming: false,
     settings: {
+        show_voice: true,
         show_advanced_options: true,
         show_citations: true,
         show_history: true,
@@ -196,8 +197,8 @@ function doLogout() {
 
 async function loadAndApplySettings() {
     try {
-        const s = await apiRequest('GET', '/admin/settings');
-        if (s) state.settings = s;
+        const s = await apiRequest('GET', '/admin/my-settings');
+        if (s) state.settings = { ...state.settings, ...s };
     } catch {}
     applySettings();
 }
@@ -214,6 +215,9 @@ function applySettings() {
     // Show admin nav for admins
     document.querySelectorAll('.admin-only').forEach(el =>
         el.classList.toggle('hidden', !state.user?.is_admin));
+    // Show/hide voice controls
+    document.querySelectorAll('.voice-controls').forEach(el =>
+        el.classList.toggle('hidden', !s.show_voice));
 }
 
 function updateSidebarUser() {
@@ -702,8 +706,9 @@ function renderAdminView() {
     </div>
 
     <div class="card">
-        <div class="view-header" style="margin-bottom:1rem"><h2 style="font-size:1rem">UI Toggles</h2></div>
+        <div class="view-header" style="margin-bottom:1rem"><h2 style="font-size:1rem">Global Defaults</h2><p style="font-size:.8rem;color:var(--text-muted)">Applied to all users unless overridden per user below</p></div>
         <div class="settings-grid">
+            ${toggle('set-voice', s.show_voice, 'Voice Input', 'Allow microphone / Hindi / Marathi voice queries')}
             ${toggle('set-advanced', s.show_advanced_options, 'Advanced Options', 'Show the top_k and source filter controls on the query page')}
             ${toggle('set-citations', s.show_citations, 'Source Citations', 'Show the citations panel below each response')}
             ${toggle('set-analysis', s.show_analysis, 'Analysis Section', 'Show the narrative Analysis text below the repertorization table')}
@@ -721,12 +726,15 @@ function renderAdminView() {
                 <button class="theme-btn ${s.theme === t ? 'active' : ''}" data-theme="${t}" title="${themeLabels[t]}"></button>`).join('')}
             </div>
         </div>
-        <button class="admin-save-btn" id="admin-save">Save Settings</button>
+        <button class="admin-save-btn" id="admin-save">Save Global Defaults</button>
     </div>
 
-    <div class="card" id="users-card">
-        <div class="view-header" style="margin-bottom:1rem"><h2 style="font-size:1rem">Registered Users</h2></div>
-        <div id="users-table-wrap"><p style="color:var(--text-muted);font-size:.9rem">Loading…</p></div>
+    <div class="card">
+        <div class="view-header" style="margin-bottom:1rem">
+            <h2 style="font-size:1rem">Per-User Feature Access</h2>
+            <p style="font-size:.8rem;color:var(--text-muted)">Override global defaults for individual users. Greyed-out = using global default.</p>
+        </div>
+        <div id="acl-matrix-wrap"><p style="color:var(--text-muted);font-size:.9rem">Loading…</p></div>
     </div>`;
 }
 
@@ -743,9 +751,10 @@ function setupAdminEvents() {
         });
     });
 
-    // Save button
+    // Save global defaults
     document.getElementById('admin-save').addEventListener('click', async () => {
         const settings = {
+            show_voice: document.getElementById('set-voice').checked,
             show_advanced_options: document.getElementById('set-advanced').checked,
             show_citations: document.getElementById('set-citations').checked,
             show_analysis: document.getElementById('set-analysis').checked,
@@ -756,35 +765,99 @@ function setupAdminEvents() {
         };
         try {
             await apiRequest('POST', '/admin/settings', settings);
-            state.settings = settings;
+            state.settings = { ...state.settings, ...settings };
             applySettings();
-            showToast('Settings saved!', 'success');
+            showToast('Global defaults saved!', 'success');
         } catch (e) {
             showToast(e.message, 'error');
         }
     });
 
-    // Load users
-    apiRequest('GET', '/admin/users').then(users => {
-        if (!users) return;
-        const wrap = document.getElementById('users-table-wrap');
-        if (!wrap) return;
-        wrap.innerHTML = `
-        <table class="users-table">
-            <thead><tr>
-                <th>Name</th><th>Email</th><th>Status</th><th>Role</th><th>Joined</th>
-            </tr></thead>
-            <tbody>
-                ${users.map(u => `<tr>
-                    <td>${esc(u.full_name)}</td>
-                    <td>${esc(u.email)}</td>
-                    <td><span class="pill ${u.is_active ? 'pill-active' : 'pill-inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-                    <td>${u.is_admin ? '<span class="pill pill-admin">Admin</span>' : 'User'}</td>
-                    <td>${fmtDate(u.created_at)}</td>
-                </tr>`).join('')}
-            </tbody>
-        </table>`;
-    }).catch(() => {});
+    // Load ACL matrix
+    loadAclMatrix();
+}
+
+const ACL_FEATURES = [
+    { key: 'show_voice',            label: 'Voice' },
+    { key: 'show_analysis',         label: 'Analysis' },
+    { key: 'show_citations',        label: 'Citations' },
+    { key: 'show_history',          label: 'History' },
+    { key: 'show_saved_rubrics',    label: 'Saved' },
+    { key: 'show_advanced_options', label: 'Adv. Opts' },
+    { key: 'show_processing_time',  label: 'Timing' },
+];
+
+async function loadAclMatrix() {
+    const wrap = document.getElementById('acl-matrix-wrap');
+    if (!wrap) return;
+    let users;
+    try { users = await apiRequest('GET', '/admin/users'); }
+    catch (e) { wrap.innerHTML = `<p style="color:var(--error)">${esc(e.message)}</p>`; return; }
+
+    const global = state.settings;
+    wrap.innerHTML = `
+    <div class="acl-scroll">
+    <table class="acl-table">
+        <thead><tr>
+            <th>User</th>
+            ${ACL_FEATURES.map(f => `<th>${f.label}</th>`).join('')}
+            <th></th>
+        </tr></thead>
+        <tbody>
+        ${users.map(u => `
+        <tr data-uid="${esc(u.id)}">
+            <td class="acl-user-cell">
+                <div class="acl-user-name">${esc(u.full_name)}</div>
+                <div class="acl-user-email">${esc(u.email)}</div>
+            </td>
+            ${ACL_FEATURES.map(f => {
+                const hasOverride = u.feature_flags[f.key] !== undefined && u.feature_flags[f.key] !== null;
+                const val = hasOverride ? u.feature_flags[f.key] : global[f.key];
+                return `<td class="acl-cell">
+                    <label class="acl-toggle ${hasOverride ? 'overridden' : 'inherited'}" title="${hasOverride ? 'User-specific override' : 'Using global default'}">
+                        <input type="checkbox" data-feature="${f.key}" ${val ? 'checked' : ''}>
+                        <span class="acl-slider"></span>
+                    </label>
+                </td>`;
+            }).join('')}
+            <td><button class="btn-secondary acl-save-btn" data-uid="${esc(u.id)}">Save</button></td>
+        </tr>`).join('')}
+        </tbody>
+    </table>
+    </div>`;
+
+    // Mark overridden on change
+    wrap.querySelectorAll('.acl-toggle input').forEach(cb => {
+        cb.addEventListener('change', () => {
+            cb.closest('.acl-toggle').classList.remove('inherited');
+            cb.closest('.acl-toggle').classList.add('overridden');
+        });
+    });
+
+    // Save per-user
+    wrap.querySelectorAll('.acl-save-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const uid = btn.dataset.uid;
+            const row = wrap.querySelector(`tr[data-uid="${uid}"]`);
+            const flags = {};
+            row.querySelectorAll('input[data-feature]').forEach(cb => {
+                flags[cb.dataset.feature] = cb.checked;
+            });
+            btn.disabled = true; btn.textContent = '…';
+            try {
+                await apiRequest('POST', `/admin/users/${uid}/settings`, flags);
+                showToast('User settings saved!', 'success');
+                // Mark all toggles in row as overridden
+                row.querySelectorAll('.acl-toggle').forEach(el => {
+                    el.classList.remove('inherited'); el.classList.add('overridden');
+                });
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save';
+            }
+        });
+    });
 }
 
 // ─── Auth Views ───────────────────────────────────────────────

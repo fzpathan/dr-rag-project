@@ -471,6 +471,41 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 .users-table th { text-align: left; padding: .5rem .75rem; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 600; font-size: .8rem; }
 .users-table td { padding: .625rem .75rem; border-bottom: 1px solid var(--border); }
 .users-table tr:last-child td { border-bottom: none; }
+
+/* ─── ACL Matrix ──────────────────────────────────────────── */
+.acl-scroll { overflow-x: auto; }
+.acl-table { width: 100%; border-collapse: collapse; font-size: .82rem; white-space: nowrap; }
+.acl-table th { padding: .45rem .6rem; border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 600; font-size: .78rem; text-align: center; }
+.acl-table th:first-child { text-align: left; }
+.acl-table td { padding: .5rem .6rem; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
+.acl-table td:first-child { text-align: left; }
+.acl-table tr:last-child td { border-bottom: none; }
+.acl-table tr:hover td { background: var(--primary-light); }
+.acl-user-cell { min-width: 140px; }
+.acl-user-name { font-weight: 600; color: var(--text); }
+.acl-user-email { font-size: .75rem; color: var(--text-muted); }
+.acl-cell { width: 60px; }
+
+/* ACL toggle — smaller than the main toggle */
+.acl-toggle { position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer; }
+.acl-toggle input { opacity: 0; width: 0; height: 0; }
+.acl-slider {
+    position: absolute; inset: 0;
+    background: #cbd5e1; border-radius: 20px;
+    transition: background .2s;
+}
+.acl-slider::before {
+    content: ''; position: absolute;
+    width: 14px; height: 14px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%;
+    transition: transform .2s;
+}
+.acl-toggle input:checked + .acl-slider { background: var(--primary); }
+.acl-toggle input:checked + .acl-slider::before { transform: translateX(16px); }
+/* Inherited = faded, overridden = full opacity */
+.acl-toggle.inherited { opacity: .45; }
+.acl-toggle.overridden { opacity: 1; }
+.acl-save-btn { font-size: .78rem; padding: .25rem .65rem; }
 .pill { display: inline-block; font-size: .7rem; padding: .15rem .5rem; border-radius: 99px; font-weight: 600; }
 .pill-admin { background: #fef3c7; color: #92400e; }
 .pill-active { background: #dcfce7; color: #166534; }
