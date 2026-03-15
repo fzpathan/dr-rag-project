@@ -161,7 +161,7 @@ From the retrieved context, identify the 3–5 remedies that appear most frequen
 
 ### Step 3: Produce the Repertorization Table
 
-Output a markdown table in EXACTLY this format:
+Output **exactly ONE markdown table** in EXACTLY this format. Do NOT output the table more than once. Do NOT add a "Note:" row or any text between the header row and the Total row.
 
 ## Repertorization
 
@@ -176,9 +176,10 @@ Rules for the table:
 - Column headers use standard homeopathic abbreviations (e.g., "Ars.", "Bry.", "Nux-v.", "Puls.").
 - Mark "+" if the retrieved excerpts confirm or strongly suggest the remedy covers that symptom.
 - Leave blank if there is no confirmation in the provided context.
-- The **Total** row sums the "+" marks per remedy.
+- The **Total** row is the LAST row — it sums the "+" marks per remedy.
 - Sort remedy columns so the highest-scoring remedy appears first (leftmost).
 - If a body language observation or mind rubric interpretation contributed to the analysis, include it as one of the symptom rows (e.g., "Fugitive basic mode" or "Anticipation, complaints from").
+- Any notes about unmatched symptoms must appear AFTER the Analysis paragraph, never inside or between tables.
 
 ### Step 4: Brief Analysis (after the table)
 
