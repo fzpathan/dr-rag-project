@@ -1,14 +1,39 @@
 /**
  * Authentication state store using Zustand.
+ * Also fetches and stores admin ACL settings after login.
  */
 
 import { create } from 'zustand';
 import { authService } from '../services/authService';
 import { getStoredTokens, clearStoredTokens } from '../services/api';
 import type { User, LoginCredentials, RegisterData, AuthState } from '../types/auth';
+import api from '../services/api';
+import { endpoints } from '../constants/api';
+
+export interface AppSettings {
+  show_voice: boolean;
+  show_analysis: boolean;
+  show_citations: boolean;
+  show_history: boolean;
+  show_saved_rubrics: boolean;
+  show_advanced_options: boolean;
+  show_processing_time: boolean;
+  theme: string;
+}
+
+const DEFAULT_SETTINGS: AppSettings = {
+  show_voice: true,
+  show_analysis: true,
+  show_citations: true,
+  show_history: true,
+  show_saved_rubrics: true,
+  show_advanced_options: true,
+  show_processing_time: true,
+  theme: 'default',
+};
 
 interface AuthStore extends AuthState {
-  // Actions
+  settings: AppSettings;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -17,29 +42,30 @@ interface AuthStore extends AuthState {
   setLoading: (loading: boolean) => void;
 }
 
+async function fetchSettings(): Promise<AppSettings> {
+  try {
+    const res = await api.get<AppSettings>(endpoints.mySettings);
+    return { ...DEFAULT_SETTINGS, ...res.data };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  // Initial state
   user: null,
   accessToken: null,
   refreshToken: null,
   isAuthenticated: false,
   isLoading: true,
+  settings: DEFAULT_SETTINGS,
 
-  // Actions
   login: async (credentials: LoginCredentials) => {
     set({ isLoading: true });
-
     try {
       const tokens = await authService.login(credentials);
       const user = await authService.getCurrentUser();
-
-      set({
-        user,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      const settings = await fetchSettings();
+      set({ user, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, isAuthenticated: true, isLoading: false, settings });
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -48,10 +74,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   register: async (data: RegisterData) => {
     set({ isLoading: true });
-
     try {
       await authService.register(data);
-      // After registration, login the user
       await get().login({ email: data.email, password: data.password });
     } catch (error) {
       set({ isLoading: false });
@@ -61,54 +85,32 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: async () => {
     set({ isLoading: true });
-
     try {
       await authService.logout();
     } finally {
-      set({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
+      set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: false, settings: DEFAULT_SETTINGS });
     }
   },
 
   loadUser: async () => {
     set({ isLoading: true });
-
     try {
       const user = await authService.getCurrentUser();
       const tokens = await getStoredTokens();
-
-      set({
-        user,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      const settings = await fetchSettings();
+      set({ user, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, isAuthenticated: true, isLoading: false, settings });
     } catch (error) {
       await clearStoredTokens();
-      set({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
+      set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: false, settings: DEFAULT_SETTINGS });
     }
   },
 
   checkAuth: async () => {
     const tokens = await getStoredTokens();
-
     if (!tokens.accessToken) {
       set({ isAuthenticated: false, isLoading: false });
       return false;
     }
-
     try {
       await get().loadUser();
       return true;
@@ -117,9 +119,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  setLoading: (loading: boolean) => {
-    set({ isLoading: loading });
-  },
+  setLoading: (loading: boolean) => set({ isLoading: loading }),
 }));
 
 export default useAuthStore;

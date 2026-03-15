@@ -1,12 +1,15 @@
 /**
- * Tabs layout - main app navigation.
+ * Tabs layout — only shows tabs that are enabled by admin settings.
  */
 
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../src/constants/colors';
+import { useAuthStore } from '../../src/stores/authStore';
 
 export default function TabsLayout() {
+  const { settings } = useAuthStore();
+
   return (
     <Tabs
       screenOptions={{
@@ -29,34 +32,27 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Query',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home" size={size} color={color} />
+            <MaterialCommunityIcons name="magnify" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="about"
+        name="history"
         options={{
-          title: 'About',
+          title: 'History',
+          href: settings.show_history ? undefined : null,
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="information" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="contact"
-        options={{
-          title: 'Contact',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="email" size={size} color={color} />
+            <MaterialCommunityIcons name="history" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="saved-rubrics"
         options={{
-          title: 'Rubrics',
+          title: 'Saved',
+          href: settings.show_saved_rubrics ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="bookmark-multiple" size={size} color={color} />
           ),

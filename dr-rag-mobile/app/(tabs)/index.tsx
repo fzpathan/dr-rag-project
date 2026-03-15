@@ -1,74 +1,41 @@
 /**
- * Home/Query screen - main remedy search interface.
+ * Home/Query screen — main remedy search interface.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
+  View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { Text, TextInput, Button, IconButton, Menu } from 'react-native-paper';
+import { Text, TextInput, Button, IconButton, Menu, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Markdown from 'react-native-markdown-display';
 import { router } from 'expo-router';
 import { colors } from '../../src/constants/colors';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useQueryStore } from '../../src/stores/queryStore';
-import { InputModeToggle, VoiceRecorder, ResponseCard } from '../../src/components';
-import { LoadingSpinner } from '../../src/components/ui/LoadingSpinner';
+import { VoiceRecorder, ResponseCard } from '../../src/components';
 
 export default function HomeScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, settings } = useAuthStore();
   const {
-    currentQuery,
-    currentResponse,
-    isLoading,
-    error,
-    inputMode,
-    setQuery,
-    setInputMode,
-    submitQuery,
-    clearResponse,
-    clearError,
+    currentQuery, currentResponse, streamingText, isStreaming, isLoading, error,
+    inputMode, setQuery, setInputMode, submitQuery, clearResponse, clearError,
   } = useQueryStore();
 
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = React.useState(false);
 
-  // Clear error on mount
-  useEffect(() => {
-    clearError();
-  }, []);
+  useEffect(() => { clearError(); }, []);
 
   const handleSubmit = async () => {
-    if (!currentQuery.trim()) {
-      Alert.alert('Empty Query', 'Please enter or record your question.');
-      return;
-    }
-
-    try {
-      await submitQuery({ question: currentQuery.trim() });
-    } catch (err) {
-      // Error is already handled in the store
-    }
+    if (!currentQuery.trim()) return;
+    await submitQuery({ question: currentQuery.trim() });
   };
 
-  const handleVoiceRecordingComplete = async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) {
-      Alert.alert('No speech detected', 'Please speak clearly or switch to text input.');
-      return;
-    }
-
-    setQuery(trimmed);
-    try {
-      await submitQuery({ question: trimmed });
-    } catch (err) {
-      // Store already reports the error.
-    }
+  const handleVoiceComplete = async (text: string) => {
+    if (!text.trim()) return;
+    setQuery(text.trim());
+    await submitQuery({ question: text.trim() });
   };
 
   const handleLogout = async () => {
@@ -80,181 +47,160 @@ export default function HomeScreen() {
   const handleNewQuery = () => {
     clearResponse();
     setQuery('');
+    clearError();
+  };
+
+  // Resolve effective input mode when voice is disabled by admin
+  const effectiveMode = (!settings.show_voice && inputMode === 'voice') ? 'text' : inputMode;
+
+  const markdownStyles = {
+    body: { color: colors.textPrimary, fontSize: 15, lineHeight: 24 },
+    heading2: { color: colors.primary[700], fontSize: 18, fontWeight: '700' as const, marginTop: 16, marginBottom: 8 },
+    heading3: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' as const, marginTop: 12, marginBottom: 6 },
+    strong: { color: colors.primary[700], fontWeight: '600' as const },
+    table: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, marginVertical: 12 },
+    th: { backgroundColor: colors.primary[50], padding: 8, fontWeight: '600' as const },
+    td: { padding: 8, borderTopWidth: 1, borderColor: colors.borderLight },
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <MaterialCommunityIcons
-              name="leaf"
-              size={28}
-              color={colors.primary[500]}
-            />
-            <Text style={styles.headerTitle}>Remedy Finder</Text>
+            <MaterialCommunityIcons name="leaf" size={26} color={colors.primary[500]} />
+            <Text style={styles.headerTitle}>DR-RAG</Text>
           </View>
-
           <Menu
             visible={menuVisible}
             onDismiss={() => setMenuVisible(false)}
             anchor={
-              <IconButton
-                icon="account-circle"
-                size={28}
-                iconColor={colors.primary[500]}
-                onPress={() => setMenuVisible(true)}
-              />
+              <IconButton icon="account-circle" size={26} iconColor={colors.primary[500]}
+                onPress={() => setMenuVisible(true)} />
             }
           >
-            <Menu.Item
-              title={user?.full_name || 'User'}
-              leadingIcon="account"
-              disabled
-            />
-            <Menu.Item
-              title="Logout"
-              leadingIcon="logout"
-              onPress={handleLogout}
-            />
+            <Menu.Item title={user?.full_name || 'User'} leadingIcon="account" disabled />
+            <Menu.Item title="Logout" leadingIcon="logout" onPress={handleLogout} />
           </Menu>
         </View>
 
         <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
+          style={styles.flex}
+          contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Response Card (if available) */}
-          {currentResponse && (
+          {/* ── Streaming response (live tokens) ─────────────── */}
+          {isStreaming && streamingText !== '' && (
+            <View style={styles.card}>
+              <View style={styles.streamingHeader}>
+                <ActivityIndicator size="small" color={colors.primary[500]} />
+                <Text style={styles.streamingLabel}>Analysing…</Text>
+              </View>
+              <Markdown style={markdownStyles}>{streamingText}</Markdown>
+            </View>
+          )}
+
+          {/* ── Loading indicator (before first token) ───────── */}
+          {(isLoading || isStreaming) && streamingText === '' && (
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="large" color={colors.primary[500]} />
+              <Text style={styles.loadingText}>Analysing symptoms…</Text>
+            </View>
+          )}
+
+          {/* ── Final response ────────────────────────────────── */}
+          {currentResponse && !isStreaming && (
             <View style={styles.responseSection}>
               <View style={styles.responseSectionHeader}>
-                <Text style={styles.sectionTitle}>Response</Text>
-                <Button
-                  mode="text"
-                  compact
-                  onPress={handleNewQuery}
-                  icon="plus"
-                >
-                  New Query
-                </Button>
+                <Text style={styles.sectionTitle}>Repertorization</Text>
+                <Button mode="text" compact onPress={handleNewQuery} icon="plus">New Query</Button>
               </View>
               <ResponseCard response={currentResponse} />
             </View>
           )}
 
-          {/* Input Section */}
-          {!currentResponse && (
+          {/* ── Error ─────────────────────────────────────────── */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <MaterialCommunityIcons name="alert-circle" size={20} color={colors.error} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          {/* ── Input section ─────────────────────────────────── */}
+          {!currentResponse && !isStreaming && !isLoading && (
             <View style={styles.inputSection}>
-              <Text style={styles.welcomeText}>
-                Ask about symptoms, conditions, or remedies
-              </Text>
 
-              {/* Mode Toggle */}
-              <View style={styles.toggleContainer}>
-                <InputModeToggle mode={inputMode} onModeChange={setInputMode} />
-              </View>
+              {/* Mode toggle (only if voice is enabled by admin) */}
+              {settings.show_voice && (
+                <View style={styles.modeRow}>
+                  <TouchableMode
+                    active={effectiveMode === 'text'}
+                    icon="keyboard"
+                    label="Text"
+                    onPress={() => setInputMode('text')}
+                  />
+                  <TouchableMode
+                    active={effectiveMode === 'voice'}
+                    icon="microphone"
+                    label="Voice"
+                    onPress={() => setInputMode('voice')}
+                  />
+                </View>
+              )}
 
-              {/* Text Input */}
-              {inputMode === 'text' && (
-                <View style={styles.textInputContainer}>
+              {/* Text input */}
+              {effectiveMode === 'text' && (
+                <>
                   <TextInput
                     mode="outlined"
-                    placeholder="Enter symptoms or condition..."
+                    placeholder="Describe the patient's symptoms in detail…"
                     value={currentQuery}
                     onChangeText={setQuery}
                     multiline
-                    numberOfLines={4}
+                    numberOfLines={5}
                     style={styles.textInput}
                     outlineColor={colors.border}
                     activeOutlineColor={colors.primary[500]}
                   />
-
                   <Button
                     mode="contained"
                     onPress={handleSubmit}
-                    loading={isLoading}
-                    disabled={isLoading || !currentQuery.trim()}
+                    disabled={!currentQuery.trim()}
                     style={styles.submitButton}
                     contentStyle={styles.submitButtonContent}
                     icon="magnify"
                   >
-                    Find Remedy
+                    Analyse Symptoms
                   </Button>
-                </View>
+                </>
               )}
 
-              {/* Voice Input */}
-              {inputMode === 'voice' && (
-                <View style={styles.voiceInputContainer}>
-                  <VoiceRecorder
-                    onRecordingComplete={handleVoiceRecordingComplete}
-                    maxDuration={30}
-                    disabled={isLoading}
-                  />
-                </View>
+              {/* Voice input */}
+              {effectiveMode === 'voice' && settings.show_voice && (
+                <VoiceRecorder onRecordingComplete={handleVoiceComplete} maxDuration={60} />
               )}
 
-              {/* Loading State */}
-              {isLoading && (
-                <View style={styles.loadingContainer}>
-                  <LoadingSpinner message="Analyzing your query..." />
+              {/* Tips */}
+              {!error && (
+                <View style={styles.tips}>
+                  <Text style={styles.tipsTitle}>Tips for better results</Text>
+                  {[
+                    'Describe symptoms in detail — location, sensation, onset',
+                    'Include what makes symptoms better or worse',
+                    'Mention mental or emotional symptoms',
+                    'Note time of aggravation (e.g. worse at midnight)',
+                  ].map((tip, i) => (
+                    <View key={i} style={styles.tipItem}>
+                      <MaterialCommunityIcons name="check-circle" size={14} color={colors.primary[500]} />
+                      <Text style={styles.tipText}>{tip}</Text>
+                    </View>
+                  ))}
                 </View>
               )}
-
-              {/* Error State */}
-              {error && (
-                <View style={styles.errorContainer}>
-                  <MaterialCommunityIcons
-                    name="alert-circle"
-                    size={24}
-                    color={colors.error}
-                  />
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Tips */}
-          {!currentResponse && !isLoading && (
-            <View style={styles.tipsSection}>
-              <Text style={styles.tipsTitle}>Tips for better results:</Text>
-              <View style={styles.tipItem}>
-                <MaterialCommunityIcons
-                  name="check-circle"
-                  size={16}
-                  color={colors.primary[500]}
-                />
-                <Text style={styles.tipText}>
-                  Describe symptoms in detail (location, sensation, modalities)
-                </Text>
-              </View>
-              <View style={styles.tipItem}>
-                <MaterialCommunityIcons
-                  name="check-circle"
-                  size={16}
-                  color={colors.primary[500]}
-                />
-                <Text style={styles.tipText}>
-                  Include what makes symptoms better or worse
-                </Text>
-              </View>
-              <View style={styles.tipItem}>
-                <MaterialCommunityIcons
-                  name="check-circle"
-                  size={16}
-                  color={colors.primary[500]}
-                />
-                <Text style={styles.tipText}>
-                  Mention any emotional or mental symptoms
-                </Text>
-              </View>
             </View>
           )}
         </ScrollView>
@@ -263,121 +209,65 @@ export default function HomeScreen() {
   );
 }
 
+function TouchableMode({ active, icon, label, onPress }: { active: boolean; icon: string; label: string; onPress: () => void }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Button
+        mode={active ? 'contained' : 'outlined'}
+        icon={icon}
+        onPress={onPress}
+        style={[styles.modeBtn, active && styles.modeBtnActive]}
+        labelStyle={{ fontSize: 13 }}
+        compact
+      >
+        {label}
+      </Button>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
+  content: { padding: 14, gap: 12 },
+  card: {
+    backgroundColor: colors.card, borderRadius: 14, padding: 16,
+    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 3,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
+  streamingHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  streamingLabel: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' },
+  loadingCard: {
+    backgroundColor: colors.card, borderRadius: 14, padding: 32,
+    alignItems: 'center', gap: 12,
+    elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2,
   },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  inputSection: {
-    marginBottom: 24,
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  toggleContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  textInputContainer: {
-    gap: 16,
-  },
-  textInput: {
-    backgroundColor: colors.background,
-    minHeight: 120,
-  },
-  submitButton: {
-    borderRadius: 12,
-    backgroundColor: colors.primary[500],
-  },
-  submitButtonContent: {
-    height: 52,
-  },
-  voiceInputContainer: {
-    alignItems: 'center',
-  },
-  loadingContainer: {
-    marginTop: 24,
-  },
+  loadingText: { fontSize: 15, color: colors.textSecondary },
+  responseSection: { gap: 8 },
+  responseSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionTitle: { fontSize: 17, fontWeight: '600', color: colors.textPrimary },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: colors.errorLight,
-    borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    padding: 12, backgroundColor: colors.errorLight, borderRadius: 10,
   },
-  errorText: {
-    flex: 1,
-    color: colors.error,
-    fontSize: 14,
+  errorText: { flex: 1, color: colors.error, fontSize: 14 },
+  inputSection: { gap: 14 },
+  modeRow: { flexDirection: 'row', gap: 10 },
+  modeBtn: { borderRadius: 10 },
+  modeBtnActive: { backgroundColor: colors.primary[500] },
+  textInput: { backgroundColor: colors.background, minHeight: 130 },
+  submitButton: { borderRadius: 12, backgroundColor: colors.primary[500] },
+  submitButtonContent: { height: 52 },
+  tips: {
+    backgroundColor: colors.primary[50], borderRadius: 12, padding: 14, gap: 8,
   },
-  responseSection: {
-    marginBottom: 24,
-  },
-  responseSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  tipsSection: {
-    backgroundColor: colors.primary[50],
-    borderRadius: 12,
-    padding: 16,
-  },
-  tipsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary[700],
-    marginBottom: 12,
-  },
-  tipItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 8,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.primary[800],
-    lineHeight: 18,
-  },
+  tipsTitle: { fontSize: 13, fontWeight: '600', color: colors.primary[700] },
+  tipItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  tipText: { flex: 1, fontSize: 13, color: colors.primary[800], lineHeight: 18 },
 });

@@ -2,13 +2,18 @@
  * API configuration constants.
  */
 
-// API Base URL - Change this for production
-export const API_BASE_URL = __DEV__
-  ? 'http://192.168.29.5:8000/api/v1'  // Local network IP for physical device
-  : 'https://your-production-api.com/api/v1';
+// Production server — update this if the server IP/domain changes
+const PRODUCTION_URL = 'https://13.233.129.108/api/v1';
 
-// For Android emulator, use: 'http://10.0.2.2:8000/api/v1'
-// For iOS simulator, use: 'http://localhost:8000/api/v1'
+// During local development, override with your machine's LAN IP
+// e.g. 'http://192.168.1.x:8000/api/v1'
+const DEVELOPMENT_URL = PRODUCTION_URL;
+
+export const API_BASE_URL = __DEV__ ? DEVELOPMENT_URL : PRODUCTION_URL;
+
+// Token storage keys (must match api.ts)
+export const ACCESS_TOKEN_KEY = '@dr_rag_access_token';
+export const REFRESH_TOKEN_KEY = '@dr_rag_refresh_token';
 
 // API Endpoints
 export const endpoints = {
@@ -21,9 +26,13 @@ export const endpoints = {
 
   // Query
   query: '/query',
-  sources: '/query/sources',
-  stats: '/query/stats',
-  cacheStats: '/query/cache-stats',
+  queryStream: '/query/stream',
+
+  // Voice transcription (Whisper backend)
+  voiceTranscribe: '/voice/transcribe',
+
+  // Admin / settings
+  mySettings: '/admin/my-settings',
 
   // Health
   health: '/health',
@@ -32,11 +41,8 @@ export const endpoints = {
 // Request timeouts (ms)
 export const timeouts = {
   default: 30000,
-  query: 60000,  // RAG queries can take longer
+  query: 120000,   // streaming queries can take longer
+  voice: 60000,    // whisper transcription
 };
 
-export default {
-  API_BASE_URL,
-  endpoints,
-  timeouts,
-};
+export default { API_BASE_URL, endpoints, timeouts };

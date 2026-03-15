@@ -1,8 +1,10 @@
 /**
- * Voice recorder component with animations.
+ * Voice recorder component.
+ * Records audio via expo-av, uploads to the Whisper backend for transcription.
+ * Supports Auto-detect / Hindi / Marathi / English.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -15,7 +17,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { colors } from '../../constants/colors';
-import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import { useVoiceRecorder, type VoiceLanguage } from '../../hooks/useVoiceRecorder';
 
 interface VoiceRecorderProps {
   onRecordingComplete: (transcription: string) => void;
@@ -23,20 +25,22 @@ interface VoiceRecorderProps {
   disabled?: boolean;
 }
 
+const LANGUAGES: { value: VoiceLanguage; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'hi',   label: 'Hindi' },
+  { value: 'mr',   label: 'Marathi' },
+  { value: 'en',   label: 'English' },
+];
+
 export function VoiceRecorder({
   onRecordingComplete,
-  maxDuration = 30,
+  maxDuration = 60,
   disabled = false,
 }: VoiceRecorderProps) {
-  const {
-    isRecording,
-    duration,
-    transcription,
-    error,
-    startRecording,
-    stopRecording,
-    cancelRecording,
-  } = useVoiceRecorder({ maxDuration });
+  const [selectedLang, setSelectedLang] = useState<VoiceLanguage>('auto');
+
+  const { isRecording, isTranscribing, duration, error, startRecording, stopRecording, cancelRecording } =
+    useVoiceRecorder({ maxDuration });
 
   // Pulse animation
   const scale = useSharedValue(1);
@@ -44,22 +48,8 @@ export function VoiceRecorder({
 
   useEffect(() => {
     if (isRecording) {
-      scale.value = withRepeat(
-        withSequence(
-          withTiming(1.3, { duration: 600 }),
-          withTiming(1, { duration: 600 })
-        ),
-        -1,
-        false
-      );
-      opacity.value = withRepeat(
-        withSequence(
-          withTiming(0.6, { duration: 600 }),
-          withTiming(0.3, { duration: 600 })
-        ),
-        -1,
-        false
-      );
+      scale.value = withRepeat(withSequence(withTiming(1.3, { duration: 600 }), withTiming(1, { duration: 600 })), -1, false);
+      opacity.value = withRepeat(withSequence(withTiming(0.6, { duration: 600 }), withTiming(0.3, { duration: 600 })), -1, false);
     } else {
       cancelAnimation(scale);
       cancelAnimation(opacity);
@@ -74,80 +64,77 @@ export function VoiceRecorder({
   }));
 
   const handlePress = async () => {
-    if (disabled) return;
-
+    if (disabled || isTranscribing) return;
     if (isRecording) {
       const text = await stopRecording();
-      if (text) {
-        onRecordingComplete(text);
-      }
+      if (text) onRecordingComplete(text);
     } else {
-      await startRecording();
+      await startRecording(selectedLang);
     }
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatDuration = (s: number) =>
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   return (
     <View style={styles.container}>
-      {error && (
-        <Text style={styles.error}>{error}</Text>
-      )}
+      {/* Language selector */}
+      <View style={styles.langRow}>
+        {LANGUAGES.map((l) => (
+          <TouchableOpacity
+            key={l.value}
+            style={[styles.langBtn, selectedLang === l.value && styles.langBtnActive]}
+            onPress={() => setSelectedLang(l.value)}
+            disabled={isRecording || isTranscribing}
+          >
+            <Text style={[styles.langBtnText, selectedLang === l.value && styles.langBtnTextActive]}>
+              {l.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
+      {/* Error */}
+      {error && <Text style={styles.error}>{error}</Text>}
+
+      {/* Mic button */}
       <View style={styles.buttonContainer}>
-        {isRecording && (
-          <Animated.View style={[styles.pulse, pulseStyle]} />
-        )}
-
+        {isRecording && <Animated.View style={[styles.pulse, pulseStyle]} />}
         <TouchableOpacity
-          style={[
-            styles.button,
-            isRecording && styles.buttonRecording,
-            disabled && styles.buttonDisabled,
-          ]}
+          style={[styles.button, isRecording && styles.buttonRecording, (disabled || isTranscribing) && styles.buttonDisabled]}
           onPress={handlePress}
-          disabled={disabled}
+          disabled={disabled || isTranscribing}
           activeOpacity={0.8}
         >
-          <MaterialCommunityIcons
-            name={isRecording ? 'stop' : 'microphone'}
-            size={40}
-            color={colors.textOnPrimary}
-          />
+          {isTranscribing ? (
+            <MaterialCommunityIcons name="loading" size={36} color={colors.textOnPrimary} />
+          ) : (
+            <MaterialCommunityIcons
+              name={isRecording ? 'stop' : 'microphone'}
+              size={40}
+              color={colors.textOnPrimary}
+            />
+          )}
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.duration}>
-        {formatDuration(duration)} / {formatDuration(maxDuration)}
-      </Text>
-
-      <Text style={styles.transcriptionLabel}>Heard</Text>
-      <Text
-        style={[
-          styles.transcription,
-          !transcription && styles.transcriptionEmpty,
-        ]}
-        numberOfLines={2}
-        ellipsizeMode="tail"
-      >
-        {transcription || 'Listening for your question...'}
-      </Text>
-
-      <Text style={styles.hint}>
-        {isRecording
-          ? 'Tap again to stop listening'
-          : 'Tap to start capturing your question verbally'}
-      </Text>
-
+      {/* Duration */}
       {isRecording && (
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={cancelRecording}
-        >
+        <Text style={styles.duration}>{formatDuration(duration)} / {formatDuration(maxDuration)}</Text>
+      )}
+
+      {/* Status hint */}
+      <Text style={styles.hint}>
+        {isTranscribing
+          ? 'Transcribing… please wait'
+          : isRecording
+          ? 'Tap to stop recording'
+          : 'Tap to start — speech is translated to English'}
+      </Text>
+
+      {/* Cancel */}
+      {isRecording && (
+        <TouchableOpacity style={styles.cancelButton} onPress={cancelRecording}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       )}
@@ -159,6 +146,39 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: 24,
+    width: '100%',
+  },
+  langRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 24,
+  },
+  langBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  langBtnActive: {
+    borderColor: colors.primary[500],
+    backgroundColor: colors.primary[50],
+  },
+  langBtnText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  langBtnTextActive: {
+    color: colors.primary[700],
+    fontWeight: '600',
+  },
+  error: {
+    color: colors.error,
+    marginBottom: 16,
+    textAlign: 'center',
+    fontSize: 14,
   },
   buttonContainer: {
     alignItems: 'center',
@@ -194,37 +214,16 @@ const styles = StyleSheet.create({
   },
   duration: {
     marginTop: 16,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '600',
     color: colors.textPrimary,
-  },
-  transcriptionLabel: {
-    marginTop: 16,
-    fontSize: 12,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  transcription: {
-    marginTop: 4,
-    fontSize: 16,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  transcriptionEmpty: {
-    color: colors.textSecondary,
-    fontStyle: 'italic',
   },
   hint: {
     marginTop: 12,
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
-  },
-  error: {
-    color: colors.error,
-    marginBottom: 16,
-    textAlign: 'center',
+    paddingHorizontal: 24,
   },
   cancelButton: {
     marginTop: 16,
