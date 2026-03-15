@@ -38,7 +38,7 @@ steps:
       - '-t'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'
       - '.'
-    timeout: '1200s'
+    timeout: '3600s'
 
   # Push the image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -73,18 +73,20 @@ steps:
       - '--concurrency'
       - '10'
       - '--min-instances'
-      - '0'
+      - '1'
       - '--max-instances'
       - '3'
       - '--allow-unauthenticated'
       - '--set-env-vars'
       - 'USE_OPENROUTER=true'
+      - '--set-secrets'
+      - 'OPENROUTER_API_KEY=openrouter-api-key:latest,JWT_SECRET_KEY=jwt-secret-key:latest'
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$COMMIT_SHA'
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'
 
-timeout: '1800s'
+timeout: '3600s'
 
 options:
   logging: CLOUD_LOGGING_ONLY

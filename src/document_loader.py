@@ -21,13 +21,15 @@ class DocumentLoaderFactory:
         ext = file_path.suffix.lower()
 
         if ext == ".txt":
-            # Try different encodings for text files
+            # Try different encodings, actually test loading to detect failures
             for encoding in ["utf-8", "latin-1", "cp1252"]:
                 try:
+                    loader = TextLoader(str(file_path), encoding=encoding)
+                    loader.load()  # Test that encoding works
                     return TextLoader(str(file_path), encoding=encoding)
                 except Exception:
                     continue
-            return TextLoader(str(file_path), encoding="utf-8", autodetect_encoding=True)
+            return TextLoader(str(file_path), autodetect_encoding=True)
         elif ext == ".pdf":
             return PyPDFLoader(str(file_path))
         else:

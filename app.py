@@ -16,8 +16,6 @@ from src.config import config
 from src.vector_store import VectorStoreManager
 from src.retriever import RemedyRetriever
 from src.llm_chain import RemedyChain
-from src.document_loader import load_single_file
-from src.text_splitter import MetadataPreservingTextSplitter
 from src.utils import sanitize_query
 
 
@@ -28,7 +26,18 @@ st.set_page_config(
     page_title="Homeopathy Remedy Finder",
     page_icon="🌿",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
+)
+
+# Hide sidebar completely
+st.markdown(
+    """
+    <style>
+        [data-testid="collapsedControl"] { display: none; }
+        section[data-testid="stSidebar"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 
@@ -94,77 +103,10 @@ def main():
     api_key_missing = chain is None
 
     # ==========================================================================
-    # Sidebar
+    # Settings (no sidebar)
     # ==========================================================================
-    with st.sidebar:
-        st.header("📚 Knowledge Base")
-
-        # Statistics
-        stats = vs_manager.get_collection_stats()
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Chunks", stats.get("count", 0))
-        with col2:
-            st.metric("Status", "Ready" if stats.get("status") == "ready" else "Error")
-
-        st.divider()
-
-        # Source books
-        st.subheader("Source Books")
-        sources = vs_manager.list_sources()
-        if sources:
-            for source in sources:
-                st.markdown(f"• {source}")
-        else:
-            st.markdown("*No sources loaded*")
-
-        st.divider()
-
-        # Settings
-        st.subheader("⚙️ Settings")
-
-        # Source book filter
-        selected_sources = st.multiselect(
-            "Filter by source books",
-            options=sources,
-            default=sources,
-            help="Select which books to search in. Leave empty to search all.",
-        )
-
-        show_sources = st.checkbox("Show source passages", value=True)
-
-        st.divider()
-
-        # File upload
-        st.subheader("📤 Add Documents")
-        uploaded_file = st.file_uploader(
-            "Upload additional files",
-            type=["txt", "pdf"],
-            help="Upload homeopathy texts to expand the knowledge base",
-        )
-
-        if uploaded_file is not None:
-            if st.button("Process Uploaded File", type="secondary"):
-                with st.spinner("Processing document..."):
-                    try:
-                        # Save temporarily
-                        temp_path = config.DATA_DIR / uploaded_file.name
-                        with open(temp_path, "wb") as f:
-                            f.write(uploaded_file.getvalue())
-
-                        # Load and process
-                        docs = load_single_file(temp_path)
-                        splitter = MetadataPreservingTextSplitter()
-                        new_chunks = splitter.split_documents(docs)
-
-                        if new_chunks:
-                            vs_manager.add_documents(new_chunks)
-                            st.success(
-                                f"✅ Added {len(new_chunks)} chunks from {uploaded_file.name}"
-                            )
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Error processing file: {e}")
+    show_sources = True
+    source_filter = None
 
     # ==========================================================================
     # Main Content Area
@@ -212,7 +154,6 @@ def main():
 
             with st.spinner("Searching through homeopathy texts..."):
                 # Retrieve relevant chunks (filter by selected sources if not all selected)
-                source_filter = selected_sources if selected_sources else None
                 context, citations, documents = retriever.retrieve_as_context(
                     clean_query, k=config.TOP_K_RESULTS, source_filter=source_filter
                 )

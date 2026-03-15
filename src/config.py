@@ -39,7 +39,7 @@ class Config:
     CHUNK_OVERLAP: int = 200
 
     # Retrieval settings
-    TOP_K_RESULTS: int = 5
+    TOP_K_RESULTS: int = 3
     SIMILARITY_THRESHOLD: float = 0.3
 
     # LLM settings
@@ -56,7 +56,7 @@ class Config:
         return os.getenv("OPENROUTER_API_KEY")
 
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_MODEL: str = "nvidia/nemotron-3-nano-30b-a3b:free"  # Free model
+    OPENROUTER_MODEL: str = "google/gemini-2.5-flash"
 
     @property
     def USE_OPENROUTER(self) -> bool:

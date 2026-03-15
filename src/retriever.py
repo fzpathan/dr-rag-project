@@ -15,6 +15,21 @@ class RemedyRetriever:
     def __init__(self, vector_store_manager: VectorStoreManager):
         self.vs_manager = vector_store_manager
 
+    # Common stopwords to exclude from keyword extraction
+    _STOPWORDS = {
+        "a", "an", "the", "for", "with", "and", "or", "of", "in", "to",
+        "is", "it", "by", "on", "at", "from", "that", "this", "be", "as",
+        "are", "was", "were", "been", "have", "has", "had", "do", "does",
+        "did", "but", "not", "no", "what", "which", "who", "how", "when",
+        "where", "can", "could", "would", "should", "may", "might",
+        "remedy", "remedies", "treatment", "medicine", "homeopathic",
+    }
+
+    def _extract_keywords(self, query: str) -> List[str]:
+        """Extract meaningful keywords from query, excluding stopwords."""
+        words = query.lower().split()
+        return [w for w in words if w not in self._STOPWORDS and len(w) > 2]
+
     def retrieve(
         self,
         query: str,
@@ -22,7 +37,10 @@ class RemedyRetriever:
         source_filter: List[str] = None,
     ) -> List[Tuple[Document, float]]:
         """
-        Retrieve top-k relevant documents for a query.
+        Retrieve top-k relevant documents using hybrid search.
+
+        First tries keyword-filtered similarity search for each keyword,
+        then fills remaining slots with pure similarity search.
 
         Args:
             query: Search query string
@@ -45,10 +63,53 @@ class RemedyRetriever:
             else:
                 filter_dict = {"book_name": {"$in": source_filter}}
 
-        # Use similarity search with scores
-        results = vs.similarity_search_with_score(query, k=k, filter=filter_dict)
+        # Extract keywords for hybrid matching
+        keywords = self._extract_keywords(query)
 
-        return results
+        seen_ids = set()
+        keyword_results = []
+
+        # Keyword-filtered search: find docs containing key terms
+        if keywords:
+            collection = vs._collection
+            for keyword in keywords[:3]:  # Limit to top 3 keywords
+                try:
+                    chroma_results = collection.query(
+                        query_texts=[query],
+                        where_document={"$contains": keyword},
+                        n_results=k,
+                        **({"where": filter_dict} if filter_dict else {}),
+                    )
+                    if chroma_results and chroma_results["ids"][0]:
+                        for i, doc_id in enumerate(chroma_results["ids"][0]):
+                            if doc_id not in seen_ids:
+                                seen_ids.add(doc_id)
+                                doc = Document(
+                                    page_content=chroma_results["documents"][0][i],
+                                    metadata=chroma_results["metadatas"][0][i] or {},
+                                )
+                                dist = chroma_results["distances"][0][i]
+                                keyword_results.append((doc, dist))
+                except Exception:
+                    continue
+
+        # Sort keyword results by distance (lower = more similar)
+        keyword_results.sort(key=lambda x: x[1])
+
+        # Fill remaining slots with pure similarity search
+        if len(keyword_results) < k:
+            semantic_results = vs.similarity_search_with_score(
+                query, k=k, filter=filter_dict
+            )
+            for doc, score in semantic_results:
+                if len(keyword_results) >= k:
+                    break
+                # Deduplicate by content
+                content_key = doc.page_content[:100]
+                if content_key not in {r[0].page_content[:100] for r in keyword_results}:
+                    keyword_results.append((doc, score))
+
+        return keyword_results[:k]
 
     def retrieve_filtered(
         self,

@@ -10,6 +10,7 @@ services:
       - db_data:/app/db
     environment:
       - DATABASE_URL=sqlite:////app/db/api_users.db
+      - PORT=8000
 
   nginx:
     image: nginx:alpine

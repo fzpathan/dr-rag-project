@@ -3,6 +3,7 @@ Query endpoints for RAG operations.
 """
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from api.models.query import (
     QueryRequest,
@@ -80,6 +81,53 @@ async def query_remedy(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process query. Please try again.",
+        )
+
+
+@router.post("/stream")
+async def query_remedy_stream(
+    request: QueryRequest,
+    current_user=Depends(get_current_user),
+    rag_service: RAGService = Depends(get_rag_service),
+):
+    """
+    Submit a remedy query with Server-Sent Events streaming.
+
+    Returns an SSE stream with events:
+    - `citations` — source citations (sent first)
+    - `token` — individual LLM response tokens
+    - `done` — final event with query ID and processing time
+    """
+    try:
+        clean_question = request.question
+
+        def event_generator():
+            for chunk in rag_service.query_stream(
+                question=clean_question,
+                source_filter=request.source_filter,
+                top_k=request.top_k,
+            ):
+                yield f"data: {chunk}\n\n"
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process streaming query.",
         )
 
 

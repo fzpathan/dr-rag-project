@@ -141,6 +141,55 @@ class RAGService:
             logger.error(f"Query error [{query_id}]: {e}")
             raise
 
+    def query_stream(
+        self,
+        question: str,
+        source_filter: Optional[List[str]] = None,
+        top_k: int = 3,
+    ):
+        """
+        Execute a RAG query with streaming LLM response.
+
+        Yields:
+            dict events: {"type": "citations", ...} then {"type": "token", ...} then {"type": "done", ...}
+        """
+        import json as _json
+        start_time = time.time()
+        query_id = str(uuid.uuid4())
+
+        clean_query = sanitize_query(question)
+        logger.info(f"Streaming query [{query_id}]: {clean_query[:50]}...")
+
+        # Retrieve context
+        context, citations, documents = self.retriever.retrieve_as_context(
+            clean_query,
+            k=top_k,
+            source_filter=source_filter,
+        )
+
+        if not context:
+            yield _json.dumps({"type": "done", "id": query_id, "answer": "No relevant information found.", "processing_time_ms": 0})
+            return
+
+        # Send citations first so the client can render them immediately
+        formatted_citations = []
+        for doc in documents:
+            formatted_citations.append({
+                "source": doc.metadata.get("book_name", "Unknown"),
+                "page": doc.metadata.get("page_number"),
+                "excerpt": doc.page_content[:300] + "..." if len(doc.page_content) > 300 else doc.page_content,
+            })
+        sources_used = list(set(doc.metadata.get("book_name", "Unknown") for doc in documents))
+
+        yield _json.dumps({"type": "citations", "citations": formatted_citations, "sources_used": sources_used})
+
+        # Stream LLM tokens
+        for token in self.chain.generate_response_streaming(clean_query, context):
+            yield _json.dumps({"type": "token", "content": token})
+
+        processing_time = int((time.time() - start_time) * 1000)
+        yield _json.dumps({"type": "done", "id": query_id, "processing_time_ms": processing_time})
+
     def get_sources(self) -> List[str]:
         """Get list of available source books."""
         return self.vs_manager.list_sources()

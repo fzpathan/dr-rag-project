@@ -17,7 +17,7 @@ class QueryRequest(BaseModel):
     """Request model for remedy query."""
     question: str = Field(..., min_length=2, max_length=500)
     source_filter: Optional[List[str]] = None
-    top_k: int = Field(default=5, ge=1, le=20)
+    top_k: int = Field(default=3, ge=1, le=20)
 
 
 class QueryResponse(BaseModel):
