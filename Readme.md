@@ -1,6 +1,6 @@
 # DR-RAG — Homeopathic Repertorization Assistant
 
-> An AI-powered clinical decision-support tool for homeopathic practitioners. Describe a patient's symptoms in plain language (or speak in Hindi / Marathi) and receive a structured repertorization table with remedy analysis drawn from seven classical and modern reference texts.
+> An AI-powered clinical decision-support tool for homeopathic practitioners. Describe a patient's symptoms in plain language (or speak in Hindi / Marathi) and receive a structured repertorization table with remedy analysis drawn from a curated corpus of classical and modern homeopathic reference texts.
 
 ---
 
@@ -9,29 +9,15 @@
 | Feature | Description |
 |---|---|
 | **Repertorization table** | Structured symptom × remedy matrix with totals, graded by source |
-| **7 knowledge sources** | Kent, Phatak, Dube, Fredrick's Synthesis, Body Language, Mind Rubric Dictionary |
+| **Multi-source knowledge base** | Curated corpus of classical materia medica, repertories, and reference texts |
 | **Streaming responses** | Token-by-token output via Server-Sent Events |
-| **Voice input** | Speak in Hindi or Marathi — Whisper translates to English before querying |
+| **Voice input** | Speak in Hindi or Marathi — automatically translated to English before querying |
 | **Query caching** | Identical queries served from cache (24 h TTL) |
 | **JWT authentication** | Access + refresh token flow with auto-renewal |
 | **Admin panel** | Global UI toggles + per-user feature access control (ACL matrix) |
 | **Saved rubrics** | Bookmark any response for later reference |
 | **History** | Last 50 queries stored locally per session |
 | **5 UI themes** | Teal (default), Blue, Purple, Rose, Dark |
-
----
-
-## Knowledge Sources
-
-| # | File | Type | Description |
-|---|------|------|-------------|
-| 1 | `kentbook.txt` | Materia Medica | Kent's Materia Medica — narrative remedy portraits |
-| 2 | `kent-repertory.txt` | Repertory | Kent's Repertory — classic symptom-to-remedy index |
-| 3 | `Phatak.txt` | Repertory | Phatak's Concise Repertory — compact, alphabetical |
-| 4 | `Dube.txt` | Materia Medica | Dube's Materia Medica — structured with numbered guiding symptoms |
-| 5 | `final mind rubric interpretation .txt` | Dictionary | Mind Rubric Interpretation — 526 mental symptom definitions |
-| 6 | `body-language.txt` | Repertory | Clinical Repertory of Body Language — non-verbal observational symptoms |
-| 7 | `Fedrick.txt` | Repertory | Fredrick's Synthesis Repertory — modern comprehensive repertory |
 
 ---
 
@@ -47,18 +33,18 @@ nginx reverse proxy
 FastAPI (uvicorn)
    ├── /api/v1/auth      — JWT login / register / refresh
    ├── /api/v1/query     — RAG query + SSE streaming
-   ├── /api/v1/voice     — Whisper audio transcription
+   ├── /api/v1/voice     — Audio transcription
    └── /api/v1/admin     — Settings + per-user ACL
         │
-        ├── ChromaDB vector store  (20 000+ chunks)
-        ├── HuggingFace embeddings (all-MiniLM-L6-v2, CPU)
-        ├── Gemini 2.5 Flash via OpenRouter
-        └── faster-whisper base model (int8, CPU)
+        ├── ChromaDB vector store
+        ├── HuggingFace sentence embeddings (CPU)
+        ├── LLM via API
+        └── Whisper speech model (CPU)
 ```
 
 ---
 
-## Self-Hosted Deployment (AWS Lightsail / any Ubuntu VPS)
+## Self-Hosted Deployment
 
 ### Prerequisites
 
@@ -69,17 +55,17 @@ FastAPI (uvicorn)
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/fzpathan/dr-rag-project.git
+git clone <repository-url>
 cd dr-rag-project
 ```
 
 Create a `.env` file:
 
 ```env
-# LLM — OpenRouter (recommended)
+# LLM provider
 USE_OPENROUTER=true
-OPENROUTER_API_KEY=sk-or-...
-OPENROUTER_MODEL=google/gemini-2.5-flash-preview
+OPENROUTER_API_KEY=<your-api-key>
+OPENROUTER_MODEL=<your-preferred-model>
 
 # Auth
 JWT_SECRET_KEY=<generate with: openssl rand -hex 32>
@@ -91,37 +77,34 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 USE_OPENAI_EMBEDDINGS=false
 ```
 
-### 2. Build and start
+### 2. Add knowledge sources
+
+Place your licensed text files in the `data/` directory. The ingest pipeline accepts plain `.txt` files and will chunk and embed them automatically during the build step.
+
+### 3. Build and start
 
 ```bash
 docker compose up -d --build
 ```
 
-> The first build ingests all seven knowledge sources into ChromaDB (~20 000 chunks). This takes several minutes.
+> The first build ingests all knowledge sources into ChromaDB. This may take several minutes depending on corpus size.
 
-### 3. Set up HTTPS (self-signed, no domain required)
+### 4. Set up HTTPS (self-signed, no domain required)
 
 ```bash
 bash setup-selfsigned-ssl.sh
 ```
 
-This generates a 10-year self-signed certificate and restarts nginx. Visit `https://<your-server-ip>` and click **Advanced → Proceed** once to accept the certificate. Voice input requires HTTPS.
+Generates a self-signed certificate and restarts nginx. Visit `https://<your-server-ip>` and accept the certificate warning once in your browser. Voice input requires HTTPS.
 
-### 4. Create the admin account
+### 5. Create the admin account
+
+Edit `seed_admin.py` to set your desired admin email and password, then run:
 
 ```bash
 docker compose cp seed_admin.py api:/app/seed_admin.py
 docker compose exec api python seed_admin.py
 ```
-
-Default admin credentials:
-
-```
-Email:    admin@drrag.com
-Password: OmSaiRam123!
-```
-
-> Change the password after first login.
 
 ---
 
@@ -137,7 +120,7 @@ Toggle features on or off for all users:
 - **Source Citations** — collapsible citation cards
 - **History** — query history tab
 - **Saved Rubrics** — bookmark tab
-- **Advanced Options** — top-k retrieval control
+- **Advanced Options** — retrieval depth control
 - **Processing Time** — response time badge
 - **Theme** — colour scheme applied globally
 
@@ -147,7 +130,7 @@ Each user has a row; each feature has a column. Toggle cells to grant or restric
 - **Faded toggle** — user inherits the global default
 - **Solid toggle** — user has an explicit override
 
-Use this to offer tiered access (e.g. voice-only on a higher plan, analysis disabled for basic users).
+Use this to offer tiered access (e.g. voice input on a higher plan, analysis section disabled for basic users).
 
 ---
 
@@ -157,12 +140,12 @@ Click the microphone button on the query page. Supported languages:
 
 | Option | Behaviour |
 |--------|-----------|
-| Auto-detect | Whisper detects language automatically |
+| Auto-detect | Language detected automatically |
 | Hindi | Transcribes Hindi speech → English text |
 | Marathi | Transcribes Marathi speech → English text |
 | English | Transcribes English speech directly |
 
-Whisper's `translate` task converts all speech to English in one step before the RAG query runs. The base model (~150 MB) downloads on first use and is cached in a Docker volume.
+The speech model's `translate` task converts all input to English in one step before the RAG query runs. The model downloads on first use and is cached in a Docker volume.
 
 ---
 
@@ -172,10 +155,10 @@ Whisper's `translate` task converts all speech to English in one step before the
 # Install all dependencies
 pip install -r requirements.txt -r api_requirements.txt
 
-# Set environment variables (see .env example above)
-cp .env.example .env   # then edit with your keys
+# Copy and configure environment variables
+cp .env.example .env
 
-# Ingest knowledge sources into ChromaDB
+# Ingest knowledge sources
 python ingest.py --reset
 
 # Start the API
@@ -184,7 +167,7 @@ uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
 API docs (Swagger UI): `http://localhost:8000/docs`
 
-Serve the frontend locally by opening `frontend/index.html` directly in a browser, or with any static file server pointed at the `frontend/` directory.
+Serve the frontend by opening `frontend/index.html` in a browser or pointing any static file server at the `frontend/` directory.
 
 ---
 
@@ -199,11 +182,11 @@ dr-rag-project/
 │   ├── routers/
 │   │   ├── auth.py         # Login, register, token refresh
 │   │   ├── query.py        # RAG query + SSE streaming
-│   │   ├── voice.py        # Whisper transcription endpoint
+│   │   ├── voice.py        # Audio transcription endpoint
 │   │   └── admin.py        # Settings + per-user ACL
 │   └── services/
-│       ├── rag_service.py  # ChromaDB retrieval + LLM chain
-│       └── voice_service.py# faster-whisper singleton
+│       ├── rag_service.py  # Vector store retrieval + LLM chain
+│       └── voice_service.py# Speech transcription service
 ├── src/
 │   ├── config.py           # Environment configuration
 │   ├── document_loader.py  # Text chunking and loading
@@ -213,7 +196,7 @@ dr-rag-project/
 │   ├── index.html
 │   ├── app.js
 │   └── style.css
-├── data/                   # Knowledge source text files
+├── data/                   # Knowledge source text files (not included)
 ├── nginx/
 │   ├── default.conf        # Reverse proxy + SSL config
 │   └── ssl/                # Self-signed certificate (git-ignored)
@@ -229,13 +212,13 @@ dr-rag-project/
 
 | Layer | Technology |
 |-------|-----------|
-| LLM | Gemini 2.5 Flash (via OpenRouter) |
-| Embeddings | `all-MiniLM-L6-v2` (HuggingFace, CPU) |
+| LLM | Configurable via API (OpenRouter / OpenAI compatible) |
+| Embeddings | Sentence transformers (HuggingFace, CPU) |
 | Vector store | ChromaDB |
 | Orchestration | LangChain |
 | Backend | FastAPI + uvicorn |
 | Auth | JWT (python-jose) |
-| Voice | faster-whisper (base, int8, CPU) |
+| Voice | faster-whisper (CPU) |
 | Database | SQLite (via SQLAlchemy) |
 | Frontend | Vanilla HTML / CSS / JS + marked.js |
 | Reverse proxy | nginx |
