@@ -621,7 +621,7 @@ function renderSavedView() {
                 <div class="list-item-title" style="color:var(--primary)">${esc(item.name)}</div>
                 <div class="list-item-subtitle">${esc(truncate(item.question, 80))}</div>
             </div>
-            <div class="list-item-date">${fmtDate(item.saved_at)}</div>
+            <div class="list-item-date">${fmtDate(item.created_at || item.saved_at)}</div>
         </div>
         <div class="list-item-body" id="saved-${i}">
             <div class="md">${marked.parse(getDisplayText(item.answer))}</div>
