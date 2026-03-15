@@ -693,7 +693,7 @@ function closeModal() {
     document.getElementById('save-modal')?.remove();
 }
 
-function confirmSave() {
+async function confirmSave() {
     const name = document.getElementById('rubric-name').value.trim();
     if (!name) { showToast('Please enter a name.', 'error'); return; }
     try {
