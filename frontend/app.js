@@ -478,15 +478,10 @@ async function submitQuery() {
                 cached: data.cached,
                 created_at: new Date().toISOString(),
             };
-            // History is auto-saved server-side by the stream endpoint;
-            // just refresh local state so the History tab stays in sync.
-            try {
-                const saved = await apiRequest('POST', '/history', entry);
-                state.history.unshift(saved);
-                if (state.history.length > 50) state.history.pop();
-            } catch {
-                state.history.unshift(entry);
-            }
+            // History is auto-saved server-side by the stream endpoint.
+            // Just keep local state in sync for the current session.
+            state.history.unshift(entry);
+            if (state.history.length > 50) state.history.pop();
 
             const card = document.getElementById('active-response');
             if (card) {
