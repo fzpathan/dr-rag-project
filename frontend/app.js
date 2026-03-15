@@ -879,8 +879,8 @@ async function handleRegister() {
 // ─── Response text helpers ────────────────────────────────────
 function getDisplayText(fullText) {
     if (state.settings.show_analysis !== false) return fullText;
-    // Strip the Analysis section — matches "**Analysis:**", "## Analysis", "Analysis:" etc.
-    const match = fullText.match(/\n[\s]*\*{0,2}Analysis:?\*{0,2}/i);
+    // Strip Analysis section — handles: ## Analysis, **Analysis**, **Analysis:**, Analysis:, Note: ...
+    const match = fullText.match(/\n+(?:#{1,6}\s*\*{0,2}|\*{0,2})(?:Analysis|Note:)/i);
     if (match) return fullText.slice(0, match.index).trimEnd();
     return fullText;
 }
