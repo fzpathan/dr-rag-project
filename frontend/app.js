@@ -131,7 +131,7 @@ async function apiQueryStream(question, topK, onCitations, onToken, onDone, onEr
                 try {
                     const data = JSON.parse(line.slice(6));
                     if (data.type === 'citations') onCitations(data.citations || []);
-                    else if (data.type === 'token') onToken(data.token || '');
+                    else if (data.type === 'token') onToken(data.content || '');
                     else if (data.type === 'done') onDone(data);
                 } catch {}
             }
