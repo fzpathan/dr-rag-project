@@ -21,6 +21,7 @@ DEFAULT_SETTINGS = {
     "show_history": True,
     "show_saved_rubrics": True,
     "show_processing_time": True,
+    "show_analysis": True,
     "theme": "default",
 }
 
@@ -31,6 +32,7 @@ class AppSettings(BaseModel):
     show_history: bool = True
     show_saved_rubrics: bool = True
     show_processing_time: bool = True
+    show_analysis: bool = True
     theme: str = "default"
 
 

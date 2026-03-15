@@ -18,6 +18,7 @@ const state = {
         show_history: true,
         show_saved_rubrics: true,
         show_processing_time: true,
+        show_analysis: true,
         theme: 'default',
     },
 };
@@ -454,7 +455,7 @@ async function submitQuery() {
         (token) => {
             fullText += token;
             const body = document.getElementById('response-body');
-            if (body) body.innerHTML = marked.parse(fullText);
+            if (body) body.innerHTML = marked.parse(getDisplayText(fullText));
         },
         (data) => {
             const meta = document.getElementById('response-meta');
@@ -705,6 +706,7 @@ function renderAdminView() {
         <div class="settings-grid">
             ${toggle('set-advanced', s.show_advanced_options, 'Advanced Options', 'Show the top_k and source filter controls on the query page')}
             ${toggle('set-citations', s.show_citations, 'Source Citations', 'Show the citations panel below each response')}
+            ${toggle('set-analysis', s.show_analysis, 'Analysis Section', 'Show the narrative Analysis text below the repertorization table')}
             ${toggle('set-history', s.show_history, 'History', 'Show the History tab in the sidebar')}
             ${toggle('set-saved', s.show_saved_rubrics, 'Saved Rubrics', 'Show the Saved Rubrics tab in the sidebar')}
             ${toggle('set-timing', s.show_processing_time, 'Processing Time', 'Show the response time badge on each result')}
@@ -746,6 +748,7 @@ function setupAdminEvents() {
         const settings = {
             show_advanced_options: document.getElementById('set-advanced').checked,
             show_citations: document.getElementById('set-citations').checked,
+            show_analysis: document.getElementById('set-analysis').checked,
             show_history: document.getElementById('set-history').checked,
             show_saved_rubrics: document.getElementById('set-saved').checked,
             show_processing_time: document.getElementById('set-timing').checked,
@@ -871,6 +874,15 @@ async function handleRegister() {
         errEl.textContent = e.message;
         btn.disabled = false; btn.textContent = 'Create Account';
     }
+}
+
+// ─── Response text helpers ────────────────────────────────────
+function getDisplayText(fullText) {
+    if (state.settings.show_analysis !== false) return fullText;
+    // Strip the Analysis section — matches "**Analysis:**", "## Analysis", "Analysis:" etc.
+    const match = fullText.match(/\n[\s]*\*{0,2}Analysis:?\*{0,2}/i);
+    if (match) return fullText.slice(0, match.index).trimEnd();
+    return fullText;
 }
 
 // ─── Utils ────────────────────────────────────────────────────
