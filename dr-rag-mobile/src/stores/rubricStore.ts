@@ -94,6 +94,7 @@ export const useRubricStore = create<RubricStore>((set, get) => ({
     }));
 
     // Persist to server
+    let serverSaveOk = false;
     try {
       const token = await getToken();
       const res = await fetch(`${API_BASE_URL}${endpoints.saved}`, {
@@ -107,6 +108,7 @@ export const useRubricStore = create<RubricStore>((set, get) => ({
         }),
       });
       if (res.ok) {
+        serverSaveOk = true;
         const serverItem = await res.json();
         // Replace local entry with server's assigned id
         set((state) => ({
@@ -119,7 +121,16 @@ export const useRubricStore = create<RubricStore>((set, get) => ({
       }
     } catch {}
 
-    // Update local cache
+    if (!serverSaveOk) {
+      // Rollback the optimistic entry — server didn't confirm the save
+      set((state) => ({
+        savedRubrics: state.savedRubrics.filter((r) => r.id !== queryResponseId),
+      }));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(get().savedRubrics));
+      return;
+    }
+
+    // Update local cache with server-confirmed state
     const current = get().savedRubrics;
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(current));
   },

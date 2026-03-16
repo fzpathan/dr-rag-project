@@ -188,7 +188,13 @@ class RAGService:
             yield _json.dumps({"type": "token", "content": token})
 
         processing_time = int((time.time() - start_time) * 1000)
-        yield _json.dumps({"type": "done", "id": query_id, "processing_time_ms": processing_time})
+        yield _json.dumps({
+            "type": "done",
+            "id": query_id,
+            "processing_time_ms": processing_time,
+            "sources_used": sources_used,
+            "cached": False,
+        })
 
     def get_sources(self) -> List[str]:
         """Get list of available source books."""

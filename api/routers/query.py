@@ -2,7 +2,10 @@
 Query endpoints for RAG operations.
 """
 import json
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -38,7 +41,8 @@ def _save_history(db: Session, user_id: str, result: dict, cached: bool) -> str 
         db.commit()
         db.refresh(item)
         return item.id
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to save query history: {e}")
         db.rollback()
         return None
 
@@ -135,6 +139,7 @@ async def query_remedy_stream(
         def event_generator():
             full_text = ""
             citations_data = []
+            sources_data = []
             done_data = {}
             for chunk in rag_service.query_stream(
                 question=clean_question,
@@ -146,6 +151,7 @@ async def query_remedy_stream(
                     data = json.loads(chunk)
                     if data.get("type") == "citations":
                         citations_data = data.get("citations", [])
+                        sources_data = data.get("sources_used", [])
                     elif data.get("type") == "token":
                         full_text += data.get("content", "")
                     elif data.get("type") == "done":
@@ -158,7 +164,7 @@ async def query_remedy_stream(
                     "question": clean_question,
                     "answer": full_text,
                     "citations": citations_data,
-                    "sources_used": done_data.get("sources_used", []),
+                    "sources_used": done_data.get("sources_used", sources_data),
                     "processing_time_ms": done_data.get("processing_time_ms", 0),
                 }, cached=done_data.get("cached", False))
                 if saved_id:

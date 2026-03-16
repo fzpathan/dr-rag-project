@@ -71,6 +71,7 @@ def _to_out(item: QueryHistory) -> HistoryItemOut:
 @router.get("", response_model=List[HistoryItemOut])
 def get_history(
     limit: int = 100,
+    offset: int = 0,
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -79,6 +80,7 @@ def get_history(
         db.query(QueryHistory)
         .filter(QueryHistory.user_id == current_user.id)
         .order_by(QueryHistory.created_at.desc())
+        .offset(offset)
         .limit(limit)
         .all()
     )

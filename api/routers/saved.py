@@ -60,6 +60,8 @@ def _to_out(item: SavedRubric) -> SavedRubricOut:
 
 @router.get("", response_model=List[SavedRubricOut])
 def list_saved(
+    limit: int = 100,
+    offset: int = 0,
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -68,6 +70,8 @@ def list_saved(
         db.query(SavedRubric)
         .filter(SavedRubric.user_id == current_user.id)
         .order_by(SavedRubric.created_at.desc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
     return [_to_out(i) for i in items]

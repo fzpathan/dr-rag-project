@@ -36,8 +36,9 @@ function parseSSEChunk(
   fullText: string,
   citations: any[],
   doneData: any,
+  historyId: string | null,
   onToken: (text: string) => void,
-): { fullText: string; citations: any[]; doneData: any } {
+): { fullText: string; citations: any[]; doneData: any; historyId: string | null } {
   const lines = chunk.split('\n');
   for (const line of lines) {
     if (!line.startsWith('data: ')) continue;
@@ -50,11 +51,15 @@ function parseSSEChunk(
         onToken(fullText);
       } else if (data.type === 'done') {
         doneData = data;
+      } else if (data.type === 'history_id') {
+        historyId = data.id || null;
       }
     } catch {}
   }
-  return { fullText, citations, doneData };
+  return { fullText, citations, doneData, historyId };
 }
+
+const STREAM_TIMEOUT_MS = 120_000;
 
 /** Stream SSE via XMLHttpRequest.onprogress — works in RN Hermes release builds. */
 function streamViaXHR(
@@ -63,16 +68,18 @@ function streamViaXHR(
   token: string,
   onToken: (text: string) => void,
   onFirstChunk: () => void,
-): Promise<{ fullText: string; citations: any[]; doneData: any }> {
+): Promise<{ fullText: string; citations: any[]; doneData: any; historyId: string | null }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.timeout = STREAM_TIMEOUT_MS;
 
     let fullText = '';
     let citations: any[] = [];
     let doneData: any = null;
+    let historyId: string | null = null;
     let lastIndex = 0;
     let firstChunkFired = false;
 
@@ -83,10 +90,11 @@ function streamViaXHR(
       }
       const chunk = xhr.responseText.slice(lastIndex);
       lastIndex = xhr.responseText.length;
-      const parsed = parseSSEChunk(chunk, fullText, citations, doneData, onToken);
+      const parsed = parseSSEChunk(chunk, fullText, citations, doneData, historyId, onToken);
       fullText = parsed.fullText;
       citations = parsed.citations;
       doneData = parsed.doneData;
+      historyId = parsed.historyId;
     };
 
     xhr.onload = () => {
@@ -102,14 +110,16 @@ function streamViaXHR(
       // Parse any remaining buffered text
       const remaining = xhr.responseText.slice(lastIndex);
       if (remaining) {
-        const parsed = parseSSEChunk(remaining, fullText, citations, doneData, onToken);
+        const parsed = parseSSEChunk(remaining, fullText, citations, doneData, historyId, onToken);
         fullText = parsed.fullText;
         citations = parsed.citations;
         doneData = parsed.doneData;
+        historyId = parsed.historyId;
       }
-      resolve({ fullText, citations, doneData });
+      resolve({ fullText, citations, doneData, historyId });
     };
 
+    xhr.ontimeout = () => reject(new Error('Request timed out. Please try again.'));
     xhr.onerror = () => reject(new Error('Network error'));
     xhr.send(body);
   });
@@ -176,7 +186,7 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
     try {
       const accessToken = (await AsyncStorage.getItem(ACCESS_TOKEN_KEY)) || '';
 
-      const { fullText, citations, doneData } = await streamViaXHR(
+      const { fullText, citations, doneData, historyId } = await streamViaXHR(
         `${API_BASE_URL}${endpoints.queryStream}`,
         JSON.stringify(request),
         accessToken,
@@ -186,7 +196,8 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
 
       if (doneData || fullText) {
         const response: QueryResponse = {
-          id: doneData?.id || String(Date.now()),
+          // Server saves history and returns historyId; fall back to doneData.id then timestamp
+          id: historyId || doneData?.id || String(Date.now()),
           question: request.question,
           answer: fullText,
           citations,
@@ -198,7 +209,7 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
 
         set({ currentResponse: response, streamingText: '' });
 
-        // Save to server-side history
+        // Streaming endpoint saves history server-side — just update local state
         const historyItem: QueryHistoryItem = {
           id: response.id,
           question: response.question,
@@ -206,25 +217,6 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
           timestamp: new Date(),
           cached: response.cached,
         };
-        try {
-          const saved = await fetch(`${API_BASE_URL}${endpoints.history}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-            body: JSON.stringify({
-              id: response.id,
-              question: response.question,
-              answer: response.answer,
-              citations: citations,
-              sources_used: response.sources_used,
-              cached: response.cached,
-              processing_time_ms: String(response.processing_time_ms),
-            }),
-          });
-          if (saved.ok) {
-            const serverItem = await saved.json();
-            historyItem.id = serverItem.id;
-          }
-        } catch {}
 
         const current = get().history;
         const updated = [historyItem, ...current].slice(0, MAX_HISTORY_ITEMS);

@@ -26,6 +26,9 @@ export const endpoints = {
   // Query
   query: '/query',
   queryStream: '/query/stream',
+  sources: '/query/sources',
+  stats: '/query/stats',
+  cacheStats: '/query/cache-stats',
 
   // Voice transcription (Whisper backend)
   voiceTranscribe: '/voice/transcribe',

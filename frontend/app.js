@@ -116,11 +116,15 @@ async function apiQueryStream(question, topK, onCitations, onToken, onDone, onHi
     const headers = { 'Content-Type': 'application/json' };
     if (state.accessToken) headers['Authorization'] = `Bearer ${state.accessToken}`;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+
     try {
         const res = await fetch(`${API}/query/stream`, {
             method: 'POST',
             headers,
             body: JSON.stringify({ question, top_k: topK }),
+            signal: controller.signal,
         });
 
         if (!res.ok) {
@@ -151,7 +155,13 @@ async function apiQueryStream(question, topK, onCitations, onToken, onDone, onHi
             }
         }
     } catch (e) {
-        onError(e.message);
+        if (e.name === 'AbortError') {
+            onError('Request timed out. Please try again.');
+        } else {
+            onError(e.message);
+        }
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
@@ -714,7 +724,7 @@ function setupHistoryEvents() {
             if (!confirm('Delete this query from history?')) return;
             const item = state.history[Number(btn.dataset.idx)];
             try { await apiRequest('DELETE', `/history/${item.id}`); } catch {}
-            state.history.splice(Number(btn.dataset.idx), 1);
+            state.history = state.history.filter(h => h.id !== item.id);
             navigate('history');
         })
     );
@@ -762,7 +772,7 @@ function setupSavedEvents() {
             e.stopPropagation();
             const item = state.saved[parseInt(btn.dataset.idx)];
             try { await apiRequest('DELETE', `/saved/${item.id}`); } catch {}
-            state.saved.splice(parseInt(btn.dataset.idx), 1);
+            state.saved = state.saved.filter(s => s.id !== item.id);
             showToast('Rubric deleted.', 'info');
             navigate('saved');
         })
@@ -1010,7 +1020,7 @@ function setupPatientsEvents() {
             if (!confirm('Delete this patient and all linked data?')) return;
             try {
                 await apiRequest('DELETE', `/patients/${btn.dataset.patientId}`);
-                state.patients.splice(parseInt(btn.dataset.patientIdx), 1);
+                state.patients = state.patients.filter(p => p.id !== btn.dataset.patientId);
                 navigate('patients');
                 showToast('Patient deleted.', 'info');
             } catch { showToast('Failed to delete patient.', 'error'); }
