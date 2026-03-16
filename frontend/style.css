@@ -819,12 +819,7 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 .ln-badge-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: #0d9488;
-    animation: badge-pulse 2s ease-in-out infinite;
-}
-@keyframes badge-pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(13,148,136,.4); }
-    50% { opacity: .8; box-shadow: 0 0 0 5px rgba(13,148,136,0); }
+    background: #5eead4;
 }
 .ln-hero-h1 {
     font-size: clamp(2.2rem, 5vw, 3.4rem);
