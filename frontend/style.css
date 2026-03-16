@@ -825,15 +825,15 @@ body.theme-dark .history-item-header:hover { background: #334155; }
     font-size: clamp(2.2rem, 5vw, 3.4rem);
     font-weight: 800;
     line-height: 1.12;
-    color: #f1f5f9;
+    background: linear-gradient(135deg, #ffffff 0%, #2dd4bf 55%, #14b8a6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     letter-spacing: -.04em;
     margin-bottom: 1.25rem;
 }
 .ln-gradient-text {
-    background: linear-gradient(135deg, #2dd4bf, #38bdf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    /* inherits gradient from parent .ln-hero-h1 */
 }
 .ln-hero-sub {
     font-size: 1.05rem;
@@ -1237,13 +1237,13 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 
 /* Hero */
 [data-theme="light"] .ln-hero-badge { color: #0d9488; background: rgba(13,148,136,.08); border-color: rgba(13,148,136,.2); }
-[data-theme="light"] .ln-hero-h1 { color: #0f172a; }
-[data-theme="light"] .ln-gradient-text {
-    background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+[data-theme="light"] .ln-hero-h1 {
+    background: linear-gradient(135deg, #0f172a 0%, #0d9488 55%, #0891b2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+[data-theme="light"] .ln-gradient-text { /* inherits from parent */ }
 [data-theme="light"] .ln-hero-sub { color: #475569; }
 [data-theme="light"] .ln-btn-ghost { color: #334155; border-color: rgba(0,0,0,.15); }
 [data-theme="light"] .ln-btn-ghost:hover { color: #0f172a; background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.22); }
