@@ -27,25 +27,25 @@ FEATURE_KEYS = [
 ]
 
 DEFAULT_SETTINGS = {
-    "show_voice": True,
-    "show_advanced_options": True,
-    "show_citations": True,
+    "show_voice": False,
+    "show_advanced_options": False,
+    "show_citations": False,
     "show_history": True,
     "show_saved_rubrics": True,
     "show_processing_time": True,
-    "show_analysis": True,
+    "show_analysis": False,
     "theme": "default",
 }
 
 
 class AppSettings(BaseModel):
-    show_voice: bool = True
-    show_advanced_options: bool = True
-    show_citations: bool = True
+    show_voice: bool = False
+    show_advanced_options: bool = False
+    show_citations: bool = False
     show_history: bool = True
     show_saved_rubrics: bool = True
     show_processing_time: bool = True
-    show_analysis: bool = True
+    show_analysis: bool = False
     theme: str = "default"
 
 
