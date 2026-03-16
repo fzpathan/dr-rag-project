@@ -240,6 +240,76 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 .btn-submit:hover:not(:disabled) { background: var(--primary-hover); }
 .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
 
+/* ─── Tips Panel ───────────────────────────────────────────── */
+.tips-panel {
+    margin-top: 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+}
+.tips-summary {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .75rem 1rem;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    background: var(--primary-light);
+}
+.tips-summary::-webkit-details-marker { display: none; }
+.tips-summary:hover { background: #e0faf6; }
+.tips-chevron {
+    margin-left: auto;
+    transition: transform .2s;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+details[open] .tips-chevron { transform: rotate(180deg); }
+.tips-body {
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+}
+.tips-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .875rem;
+}
+@media (max-width: 700px) {
+    .tips-grid { grid-template-columns: 1fr; }
+}
+.tip-item {
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+    padding: .75rem;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    transition: border-color .15s;
+}
+.tip-item:hover { border-color: var(--primary); }
+.tip-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: .1rem;
+}
+.tip-title {
+    font-size: .825rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: .2rem;
+}
+.tip-text {
+    font-size: .8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
 /* ─── Response Card ────────────────────────────────────────── */
 .response-header {
     display: flex;
@@ -393,6 +463,51 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 .btn-cancel:hover { border-color: var(--text-muted); }
 .btn-confirm { padding: .5rem 1.25rem; background: var(--primary); color: white; border-radius: 7px; font-size: .875rem; font-weight: 600; transition: background .15s; }
 .btn-confirm:hover { background: var(--primary-hover); }
+.btn-confirm:disabled { opacity: .5; cursor: not-allowed; }
+.modal-desc { font-size: .875rem; color: var(--text-muted); margin: -.25rem 0 1rem; line-height: 1.5; }
+.modal-empty { font-size: .875rem; color: var(--text-muted); padding: 1rem; text-align: center; }
+.modal-link { color: var(--primary); font-weight: 500; cursor: pointer; }
+.modal-link:hover { text-decoration: underline; }
+
+/* ─── Assign Patient List ───────────────────────────────────── */
+.assign-patient-list {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: .5rem;
+}
+.assign-patient-item {
+    display: flex;
+    align-items: center;
+    gap: .875rem;
+    padding: .75rem 1rem;
+    cursor: pointer;
+    transition: background .12s;
+    border-bottom: 1px solid var(--border);
+}
+.assign-patient-item:last-child { border-bottom: none; }
+.assign-patient-item:hover { background: var(--primary-light); }
+.assign-patient-item.selected { background: var(--primary-light); }
+.assign-patient-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .9rem;
+    flex-shrink: 0;
+}
+.assign-patient-info { flex: 1; min-width: 0; }
+.assign-patient-name { font-weight: 600; font-size: .9rem; color: var(--text); }
+.assign-patient-meta { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
+.assign-check { color: var(--primary); flex-shrink: 0; }
+.assign-check.hidden { display: none; }
+
 
 /* ─── Toast ────────────────────────────────────────────────── */
 .toast {

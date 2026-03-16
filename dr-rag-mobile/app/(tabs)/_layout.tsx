@@ -1,9 +1,10 @@
 /**
- * Tabs layout — only shows tabs that are enabled by admin settings.
+ * Tabs layout — premium dark tab bar.
  */
 
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 import { colors } from '../../src/constants/colors';
 import { useAuthStore } from '../../src/stores/authStore';
 
@@ -14,18 +15,24 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary[500],
+        tabBarActiveTintColor: colors.primary[400],
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.borderLight,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 6,
+          elevation: 0,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        },
+        tabBarIconStyle: {
+          marginBottom: 0,
         },
       }}
     >
@@ -33,8 +40,10 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Query',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="magnify" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIcon : undefined}>
+              <MaterialCommunityIcons name={focused ? 'magnify' : 'magnify'} size={22} color={color} />
+            </View>
           ),
         }}
       />
@@ -43,8 +52,10 @@ export default function TabsLayout() {
         options={{
           title: 'History',
           href: settings.show_history ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="history" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIcon : undefined}>
+              <MaterialCommunityIcons name="history" size={22} color={color} />
+            </View>
           ),
         }}
       />
@@ -53,11 +64,21 @@ export default function TabsLayout() {
         options={{
           title: 'Saved',
           href: settings.show_saved_rubrics ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="bookmark-multiple" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIcon : undefined}>
+              <MaterialCommunityIcons name={focused ? 'bookmark' : 'bookmark-outline'} size={22} color={color} />
+            </View>
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  activeIcon: {
+    backgroundColor: colors.primary[100],
+    borderRadius: 8,
+    padding: 4,
+  },
+});

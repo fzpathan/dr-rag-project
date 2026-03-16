@@ -312,6 +312,73 @@ function renderQueryView() {
             </button>
         </div>
     </div>
+    <details class="tips-panel" id="tips-panel">
+        <summary class="tips-summary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Tips for better results
+            <svg class="tips-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="tips-body">
+            <div class="tips-grid">
+                <div class="tip-item">
+                    <div class="tip-icon">🎯</div>
+                    <div>
+                        <div class="tip-title">Lead with the peculiar</div>
+                        <div class="tip-text">Strange, rare, or striking symptoms carry the most weight — "worse at exactly 3 am" or "craves ice-cold water despite being chilly" pinpoints faster than common complaints.</div>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon">📍</div>
+                    <div>
+                        <div class="tip-title">Be specific about location & sensation</div>
+                        <div class="tip-text">Describe where exactly (right side, inner corner, descending) and what it feels like (burning, stitching, pressing, bursting). "Headache" is vague; "splitting pain over left eye, worse stooping" is actionable.</div>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon">⬆️⬇️</div>
+                    <div>
+                        <div class="tip-title">Include all modalities</div>
+                        <div class="tip-text">What makes each symptom better or worse? Heat, cold, motion, rest, pressure, lying down, time of day, weather, eating, emotions — every modality narrows the differential significantly.</div>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon">🧠</div>
+                    <div>
+                        <div class="tip-title">Mental & emotional state first</div>
+                        <div class="tip-text">In homeopathy, mental symptoms often outweigh physical ones. Describe the patient's mood, fears, disposition, and any change in behavior since the illness — even if they seem unrelated.</div>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon">🕐</div>
+                    <div>
+                        <div class="tip-title">Mention timing precisely</div>
+                        <div class="tip-text">Note onset, duration, and periodicity. "Worse at midnight", "every other day", "returns each winter" — time modalities are often decisive rubrics in repertorization.</div>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon">👁️</div>
+                    <div>
+                        <div class="tip-title">Observe body language & appearance</div>
+                        <div class="tip-text">The AI cross-references a body language repertory. Posture, gestures, eye contact, facial expression, and clothing style can confirm or differentiate remedies — describe what you observe.</div>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon">🌡️</div>
+                    <div>
+                        <div class="tip-title">Note constitution & thermals</div>
+                        <div class="tip-text">Is the patient hot or chilly? Thirsty or thirstless? Sweating pattern, food cravings/aversions, body build, and dominant miasm give the AI strong constitutional context.</div>
+                    </div>
+                </div>
+                <div class="tip-item">
+                    <div class="tip-icon">🎤</div>
+                    <div>
+                        <div class="tip-title">Voice input in Hindi / Marathi</div>
+                        <div class="tip-text">Use the mic button to dictate the case as the patient speaks — the AI transcribes and translates automatically. Select the language in the dropdown before recording.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </details>
     <div id="response-area"></div>`;
 }
 
@@ -323,6 +390,14 @@ function setupQueryEvents() {
     document.getElementById('symptom-input').addEventListener('keydown', e => {
         if (e.key === 'Enter' && e.ctrlKey) submitQuery();
     });
+    // Auto-open tips on first visit; collapse once user starts typing
+    const tips = document.getElementById('tips-panel');
+    if (tips) {
+        tips.open = true;
+        document.getElementById('symptom-input').addEventListener('input', () => {
+            tips.open = false;
+        }, { once: true });
+    }
     setupVoiceEvents();
 }
 
@@ -507,8 +582,10 @@ async function submitQuery() {
                 card.insertAdjacentHTML('beforeend', `
                     <div class="response-actions">
                         <button class="btn-secondary btn-save" id="btn-save-response">🔖 Save as Rubric</button>
+                        <button class="btn-secondary btn-assign" id="btn-assign-response">👤 Assign to Patient</button>
                     </div>`);
                 document.getElementById('btn-save-response').addEventListener('click', () => showSaveModal(entry));
+                document.getElementById('btn-assign-response').addEventListener('click', () => showAssignModal(entry));
             }
 
             if (citations.length > 0 && state.settings.show_citations) {
@@ -581,6 +658,7 @@ function renderHistoryView() {
             <div class="md">${marked.parse(getDisplayText(item.answer))}</div>
             <div class="list-item-actions">
                 <button class="btn-secondary btn-save" data-idx="${i}">🔖 Save as Rubric</button>
+                <button class="btn-secondary btn-assign" data-idx="${i}">👤 Assign to Patient</button>
                 ${item.citations && item.citations.length && state.settings.show_citations
                     ? `<button class="btn-secondary btn-show-cit" data-idx="${i}">📚 Citations (${item.citations.length})</button>`
                     : ''}
@@ -601,6 +679,12 @@ function setupHistoryEvents() {
         btn.addEventListener('click', e => {
             e.stopPropagation();
             showSaveModal(state.history[btn.dataset.idx]);
+        })
+    );
+    document.querySelectorAll('#main-content .btn-assign').forEach(btn =>
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            showAssignModal(state.history[btn.dataset.idx]);
         })
     );
     document.querySelectorAll('.btn-show-cit').forEach(btn =>
@@ -705,6 +789,91 @@ function showSaveModal(entry) {
 
 function closeModal() {
     document.getElementById('save-modal')?.remove();
+}
+
+// ─── Assign Query to Patient ──────────────────────────────────
+function showAssignModal(entry) {
+    document.getElementById('assign-modal')?.remove();
+    const patients = state.patients || [];
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'assign-modal';
+    overlay.innerHTML = `
+    <div class="modal">
+        <h3>👤 Assign to Patient</h3>
+        <p class="modal-desc">Link this query to a patient record so it appears in their case history.</p>
+        ${patients.length === 0
+            ? `<p class="modal-empty">No patients yet. <a class="modal-link" onclick="closeAssignModal();navigate('patients')">Add a patient first →</a></p>`
+            : `<div class="form-group">
+                <input type="text" id="assign-search" class="modal-input" placeholder="Search patient by name…" autocomplete="off">
+               </div>
+               <div class="assign-patient-list" id="assign-patient-list">
+                 ${patients.map(p => `
+                   <div class="assign-patient-item" data-patient-id="${p.id}">
+                     <div class="assign-patient-avatar">${esc(p.name.charAt(0).toUpperCase())}</div>
+                     <div class="assign-patient-info">
+                       <div class="assign-patient-name">${esc(p.name)}</div>
+                       ${p.date_of_birth ? `<div class="assign-patient-meta">DOB: ${esc(p.date_of_birth)}</div>` : ''}
+                     </div>
+                     <svg class="assign-check hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                   </div>`).join('')}
+               </div>`}
+        <div class="modal-actions">
+            <button class="btn-cancel" id="assign-cancel">Cancel</button>
+            <button class="btn-confirm" id="assign-confirm" disabled>Assign</button>
+        </div>
+    </div>`;
+    document.body.appendChild(overlay);
+
+    let selectedPatientId = null;
+
+    // Search filter
+    document.getElementById('assign-search')?.addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll('.assign-patient-item').forEach(el => {
+            el.style.display = el.querySelector('.assign-patient-name').textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+
+    // Patient selection
+    document.querySelectorAll('.assign-patient-item').forEach(el => {
+        el.addEventListener('click', () => {
+            document.querySelectorAll('.assign-patient-item').forEach(x => {
+                x.classList.remove('selected');
+                x.querySelector('.assign-check').classList.add('hidden');
+            });
+            el.classList.add('selected');
+            el.querySelector('.assign-check').classList.remove('hidden');
+            selectedPatientId = el.dataset.patientId;
+            document.getElementById('assign-confirm').disabled = false;
+        });
+    });
+
+    document.getElementById('assign-cancel').addEventListener('click', closeAssignModal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeAssignModal(); });
+
+    document.getElementById('assign-confirm')?.addEventListener('click', async () => {
+        if (!selectedPatientId) return;
+        const btn = document.getElementById('assign-confirm');
+        btn.disabled = true;
+        btn.textContent = 'Assigning…';
+        try {
+            await apiRequest('POST', `/patients/${selectedPatientId}/queries`, {
+                query_history_id: entry.id,
+            });
+            const patient = state.patients.find(p => p.id === selectedPatientId);
+            closeAssignModal();
+            showToast(`Query assigned to ${patient?.name || 'patient'}.`, 'success');
+        } catch (e) {
+            showToast(`Failed to assign: ${e.message}`, 'error');
+            btn.disabled = false;
+            btn.textContent = 'Assign';
+        }
+    });
+}
+
+function closeAssignModal() {
+    document.getElementById('assign-modal')?.remove();
 }
 
 async function confirmSave() {

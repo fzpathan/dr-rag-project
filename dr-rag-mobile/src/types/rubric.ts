@@ -2,22 +2,23 @@
  * Saved rubric types.
  */
 
-/** A single row in a parsed rubric table. */
 export interface RubricRow {
   cells: string[];
 }
 
-/** A fully parsed rubric table extracted from an LLM response. */
 export interface ParsedRubricTable {
   headers: string[];
   rows: RubricRow[];
 }
 
-/** A saved rubric entry persisted to storage. */
+/** A saved rubric entry — mirrors the server schema. */
 export interface SavedRubric {
   id: string;
+  name: string;
   question: string;
+  answer: string;
+  citations: any[];
   queryResponseId: string;
-  table: ParsedRubricTable;
+  table: ParsedRubricTable | null;
   savedAt: string;
 }

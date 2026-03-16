@@ -1,5 +1,5 @@
 /**
- * Register screen.
+ * Register screen — dark premium design.
  */
 
 import React, { useState } from 'react';
@@ -12,9 +12,10 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
+import { Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,12 +26,9 @@ import { useAuth } from '../../src/hooks/useAuth';
 const registerSchema = z.object({
   full_name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
   email: z.string().email('Please enter a valid email'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password is too long'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
-}).refine((data) => data.password === data.confirmPassword, {
+}).refine((d) => d.password === d.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
@@ -42,33 +40,17 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterForm>({
+  const { control, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      full_name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    },
+    defaultValues: { full_name: '', email: '', password: '', confirmPassword: '' },
   });
 
   const onSubmit = async (data: RegisterForm) => {
     try {
-      await register({
-        full_name: data.full_name,
-        email: data.email,
-        password: data.password,
-      });
+      await register({ full_name: data.full_name, email: data.email, password: data.password });
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(
-        'Registration Failed',
-        error.response?.data?.detail || 'Unable to create account. Please try again.'
-      );
+      Alert.alert('Registration Failed', error.response?.data?.detail || 'Unable to create account. Please try again.');
     }
   };
 
@@ -76,37 +58,27 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={styles.flex}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Back button */}
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={colors.textPrimary} />
+          </TouchableOpacity>
+
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
-              <MaterialCommunityIcons
-                name="arrow-left"
-                size={24}
-                color={colors.textPrimary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Title */}
-          <View style={styles.titleContainer}>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>
-              Join us to find homeopathic remedies
-            </Text>
+            <Text style={styles.subtitle}>Join ClinIQ — doctor access only</Text>
           </View>
 
-          {/* Form */}
-          <View style={styles.form}>
+          {/* Form card */}
+          <View style={styles.card}>
+            {/* Full name */}
             <Controller
               control={control}
               name="full_name"
@@ -121,16 +93,17 @@ export default function RegisterScreen() {
                   onBlur={onBlur}
                   error={!!errors.full_name}
                   style={styles.input}
+                  outlineStyle={styles.inputOutline}
                   outlineColor={colors.border}
                   activeOutlineColor={colors.primary[500]}
-                  left={<TextInput.Icon icon="account" />}
+                  textColor={colors.textPrimary}
+                  left={<TextInput.Icon icon="account-outline" color={colors.textSecondary} />}
                 />
               )}
             />
-            {errors.full_name && (
-              <Text style={styles.errorText}>{errors.full_name.message}</Text>
-            )}
+            {errors.full_name && <Text style={styles.errorText}>{errors.full_name.message}</Text>}
 
+            {/* Email */}
             <Controller
               control={control}
               name="email"
@@ -146,16 +119,17 @@ export default function RegisterScreen() {
                   onBlur={onBlur}
                   error={!!errors.email}
                   style={styles.input}
+                  outlineStyle={styles.inputOutline}
                   outlineColor={colors.border}
                   activeOutlineColor={colors.primary[500]}
-                  left={<TextInput.Icon icon="email" />}
+                  textColor={colors.textPrimary}
+                  left={<TextInput.Icon icon="email-outline" color={colors.textSecondary} />}
                 />
               )}
             />
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email.message}</Text>
-            )}
+            {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
 
+            {/* Password */}
             <Controller
               control={control}
               name="password"
@@ -169,22 +143,24 @@ export default function RegisterScreen() {
                   onBlur={onBlur}
                   error={!!errors.password}
                   style={styles.input}
+                  outlineStyle={styles.inputOutline}
                   outlineColor={colors.border}
                   activeOutlineColor={colors.primary[500]}
-                  left={<TextInput.Icon icon="lock" />}
+                  textColor={colors.textPrimary}
+                  left={<TextInput.Icon icon="lock-outline" color={colors.textSecondary} />}
                   right={
                     <TextInput.Icon
-                      icon={showPassword ? 'eye-off' : 'eye'}
+                      icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      color={colors.textSecondary}
                       onPress={() => setShowPassword(!showPassword)}
                     />
                   }
                 />
               )}
             />
-            {errors.password && (
-              <Text style={styles.errorText}>{errors.password.message}</Text>
-            )}
+            {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
 
+            {/* Confirm password */}
             <Controller
               control={control}
               name="confirmPassword"
@@ -198,12 +174,15 @@ export default function RegisterScreen() {
                   onBlur={onBlur}
                   error={!!errors.confirmPassword}
                   style={styles.input}
+                  outlineStyle={styles.inputOutline}
                   outlineColor={colors.border}
                   activeOutlineColor={colors.primary[500]}
-                  left={<TextInput.Icon icon="lock-check" />}
+                  textColor={colors.textPrimary}
+                  left={<TextInput.Icon icon="lock-check-outline" color={colors.textSecondary} />}
                   right={
                     <TextInput.Icon
-                      icon={showConfirmPassword ? 'eye-off' : 'eye'}
+                      icon={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                      color={colors.textSecondary}
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                     />
                   }
@@ -214,26 +193,34 @@ export default function RegisterScreen() {
               <Text style={styles.errorText}>{errors.confirmPassword.message}</Text>
             )}
 
-            {/* Register Button */}
-            <Button
-              mode="contained"
+            {/* Submit */}
+            <TouchableOpacity
               onPress={handleSubmit(onSubmit)}
-              loading={isLoading}
               disabled={isLoading}
-              style={styles.registerButton}
-              contentStyle={styles.registerButtonContent}
-              labelStyle={styles.registerButtonLabel}
+              activeOpacity={0.85}
+              style={styles.submitWrap}
             >
-              Create Account
-            </Button>
+              <LinearGradient
+                colors={[colors.gradientStart, colors.gradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.submitGradient, isLoading && styles.submitDisabled]}
+              >
+                {isLoading ? (
+                  <MaterialCommunityIcons name="loading" size={22} color="#fff" />
+                ) : (
+                  <Text style={styles.submitLabel}>Create Account</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
 
-          {/* Login Link */}
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
+          {/* Login link */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
             <Link href="/(auth)/login" asChild>
               <TouchableOpacity>
-                <Text style={styles.loginLink}>Login</Text>
+                <Text style={styles.footerLink}>Sign in</Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -244,78 +231,54 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  backButton: {
+  container: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingVertical: 24 },
+
+  backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.neutral[100],
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 28,
   },
-  titleContainer: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  form: {
+  header: { marginBottom: 28 },
+  title: { fontSize: 28, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5, marginBottom: 6 },
+  subtitle: { fontSize: 14, color: colors.textSecondary },
+
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: 24,
   },
-  input: {
-    marginBottom: 8,
-    backgroundColor: colors.background,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: 12,
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  registerButton: {
-    marginTop: 16,
-    borderRadius: 12,
-    backgroundColor: colors.primary[500],
-  },
-  registerButtonContent: {
+
+  input: { marginBottom: 6, backgroundColor: colors.surfaceHigh },
+  inputOutline: { borderRadius: 10 },
+  errorText: { color: colors.error, fontSize: 12, marginBottom: 10, marginLeft: 4 },
+
+  submitWrap: { marginTop: 20 },
+  submitGradient: {
     height: 52,
-  },
-  registerButtonLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.glowTeal,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  loginText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
-  loginLink: {
-    color: colors.primary[500],
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  submitDisabled: { opacity: 0.6 },
+  submitLabel: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  footerText: { color: colors.textSecondary, fontSize: 14 },
+  footerLink: { color: colors.primary[400], fontSize: 14, fontWeight: '600' },
 });

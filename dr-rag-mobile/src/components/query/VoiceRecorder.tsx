@@ -1,13 +1,12 @@
 /**
- * Voice recorder component.
- * Records audio via expo-av, uploads to the Whisper backend for transcription.
- * Supports Auto-detect / Hindi / Marathi / English.
+ * Voice recorder — premium dark design with glowing mic.
  */
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -26,7 +25,7 @@ interface VoiceRecorderProps {
 }
 
 const LANGUAGES: { value: VoiceLanguage; label: string }[] = [
-  { value: 'auto', label: 'Auto' },
+  { value: 'auto',  label: 'Auto' },
   { value: 'hi',   label: 'Hindi' },
   { value: 'mr',   label: 'Marathi' },
   { value: 'en',   label: 'English' },
@@ -38,29 +37,35 @@ export function VoiceRecorder({
   disabled = false,
 }: VoiceRecorderProps) {
   const [selectedLang, setSelectedLang] = useState<VoiceLanguage>('auto');
-
   const { isRecording, isTranscribing, duration, error, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder({ maxDuration });
 
-  // Pulse animation
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.3);
+  const scale1 = useSharedValue(1);
+  const scale2 = useSharedValue(1);
+  const opacity1 = useSharedValue(0);
+  const opacity2 = useSharedValue(0);
 
   useEffect(() => {
     if (isRecording) {
-      scale.value = withRepeat(withSequence(withTiming(1.3, { duration: 600 }), withTiming(1, { duration: 600 })), -1, false);
-      opacity.value = withRepeat(withSequence(withTiming(0.6, { duration: 600 }), withTiming(0.3, { duration: 600 })), -1, false);
+      scale1.value = withRepeat(withSequence(withTiming(1.6, { duration: 900 }), withTiming(1, { duration: 900 })), -1);
+      scale2.value = withRepeat(withSequence(withTiming(2.1, { duration: 1300 }), withTiming(1, { duration: 1300 })), -1);
+      opacity1.value = withRepeat(withSequence(withTiming(0.4, { duration: 900 }), withTiming(0, { duration: 900 })), -1);
+      opacity2.value = withRepeat(withSequence(withTiming(0.2, { duration: 1300 }), withTiming(0, { duration: 1300 })), -1);
     } else {
-      cancelAnimation(scale);
-      cancelAnimation(opacity);
-      scale.value = withTiming(1);
-      opacity.value = withTiming(0.3);
+      cancelAnimation(scale1); cancelAnimation(scale2);
+      cancelAnimation(opacity1); cancelAnimation(opacity2);
+      scale1.value = withTiming(1); scale2.value = withTiming(1);
+      opacity1.value = withTiming(0); opacity2.value = withTiming(0);
     }
   }, [isRecording]);
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
+  const ring1Style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale1.value }],
+    opacity: opacity1.value,
+  }));
+  const ring2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale2.value }],
+    opacity: opacity2.value,
   }));
 
   const handlePress = async () => {
@@ -78,16 +83,17 @@ export function VoiceRecorder({
 
   return (
     <View style={styles.container}>
-      {/* Language selector */}
+      {/* Language pills */}
       <View style={styles.langRow}>
         {LANGUAGES.map((l) => (
           <TouchableOpacity
             key={l.value}
-            style={[styles.langBtn, selectedLang === l.value && styles.langBtnActive]}
+            style={[styles.langPill, selectedLang === l.value && styles.langPillActive]}
             onPress={() => setSelectedLang(l.value)}
             disabled={isRecording || isTranscribing}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.langBtnText, selectedLang === l.value && styles.langBtnTextActive]}>
+            <Text style={[styles.langText, selectedLang === l.value && styles.langTextActive]}>
               {l.label}
             </Text>
           </TouchableOpacity>
@@ -95,25 +101,46 @@ export function VoiceRecorder({
       </View>
 
       {/* Error */}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && (
+        <View style={styles.errorRow}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
-      {/* Mic button */}
-      <View style={styles.buttonContainer}>
-        {isRecording && <Animated.View style={[styles.pulse, pulseStyle]} />}
+      {/* Mic button with ripple rings */}
+      <View style={styles.micWrap}>
+        <Animated.View style={[styles.ring, ring2Style]} />
+        <Animated.View style={[styles.ring, ring1Style]} />
+
         <TouchableOpacity
-          style={[styles.button, isRecording && styles.buttonRecording, (disabled || isTranscribing) && styles.buttonDisabled]}
           onPress={handlePress}
           disabled={disabled || isTranscribing}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          {isTranscribing ? (
-            <MaterialCommunityIcons name="loading" size={36} color={colors.textOnPrimary} />
+          {isRecording ? (
+            <LinearGradient
+              colors={[colors.error, '#c93535']}
+              style={styles.micBtn}
+            >
+              <MaterialCommunityIcons name="stop" size={36} color="#fff" />
+            </LinearGradient>
+          ) : isTranscribing ? (
+            <LinearGradient
+              colors={[colors.gradientStart, colors.gradientEnd]}
+              style={styles.micBtn}
+            >
+              <MaterialCommunityIcons name="loading" size={36} color="#fff" />
+            </LinearGradient>
           ) : (
-            <MaterialCommunityIcons
-              name={isRecording ? 'stop' : 'microphone'}
-              size={40}
-              color={colors.textOnPrimary}
-            />
+            <LinearGradient
+              colors={[colors.gradientStart, colors.gradientEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.micBtn, (disabled) && styles.micBtnDisabled]}
+            >
+              <MaterialCommunityIcons name="microphone" size={36} color="#fff" />
+            </LinearGradient>
           )}
         </TouchableOpacity>
       </View>
@@ -123,18 +150,18 @@ export function VoiceRecorder({
         <Text style={styles.duration}>{formatDuration(duration)} / {formatDuration(maxDuration)}</Text>
       )}
 
-      {/* Status hint */}
+      {/* Status */}
       <Text style={styles.hint}>
         {isTranscribing
-          ? 'Transcribing… please wait'
+          ? 'Transcribing — please wait'
           : isRecording
           ? 'Tap to stop recording'
-          : 'Tap to start — speech is translated to English'}
+          : 'Tap to start recording'}
       </Text>
 
       {/* Cancel */}
       {isRecording && (
-        <TouchableOpacity style={styles.cancelButton} onPress={cancelRecording}>
+        <TouchableOpacity style={styles.cancelBtn} onPress={cancelRecording} activeOpacity={0.7}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       )}
@@ -145,96 +172,83 @@ export function VoiceRecorder({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 32,
     width: '100%',
   },
-  langRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 24,
-  },
-  langBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+
+  // Language pills
+  langRow: { flexDirection: 'row', gap: 8, marginBottom: 32 },
+  langPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
-  langBtnActive: {
+  langPillActive: {
     borderColor: colors.primary[500],
     backgroundColor: colors.primary[50],
   },
-  langBtnText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.textSecondary,
-  },
-  langBtnTextActive: {
-    color: colors.primary[700],
-    fontWeight: '600',
-  },
-  error: {
-    color: colors.error,
+  langText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  langTextActive: { color: colors.primary[400] },
+
+  // Error
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 16,
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 120,
-    height: 120,
-  },
-  pulse: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.primary[500],
-  },
-  button: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary[500],
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  buttonRecording: {
-    backgroundColor: colors.error,
-  },
-  buttonDisabled: {
-    backgroundColor: colors.neutral[400],
-  },
-  duration: {
-    marginTop: 16,
-    fontSize: 22,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  hint: {
-    marginTop: 12,
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 24,
-  },
-  cancelButton: {
-    marginTop: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    backgroundColor: colors.errorLight,
+    borderRadius: 8,
   },
-  cancelText: {
-    color: colors.error,
-    fontSize: 14,
-    fontWeight: '600',
+  errorText: { color: colors.error, fontSize: 13 },
+
+  // Mic
+  micWrap: {
+    width: 140,
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
+  ring: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: colors.primary[500],
+  },
+  micBtn: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.glowTeal,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  micBtnDisabled: { opacity: 0.4 },
+
+  // Info
+  duration: { fontSize: 28, fontWeight: '700', color: colors.textPrimary, letterSpacing: -1, marginBottom: 8 },
+  hint: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32 },
+
+  cancelBtn: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(239,68,68,0.3)',
+    backgroundColor: colors.errorLight,
+  },
+  cancelText: { color: colors.error, fontSize: 14, fontWeight: '700' },
 });
 
 export default VoiceRecorder;

@@ -1,17 +1,17 @@
 /**
- * Response card with markdown rendering.
+ * Response card — premium dark design with teal accent.
  */
 
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, Card, Divider, Chip } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../constants/colors';
 import { useRubricStore } from '../../stores/rubricStore';
-import { parseRubricTable, hasRubricTable } from '../../utils/parseRubricTable';
+import { hasRubricTable } from '../../utils/parseRubricTable';
 import type { QueryResponse, Citation } from '../../types/query';
 
 interface ResponseCardProps {
@@ -28,9 +28,7 @@ export function ResponseCard({ response }: ResponseCardProps) {
   const alreadySaved = isRubricSaved(response.id);
 
   const handleSave = async () => {
-    const table = parseRubricTable(response.answer);
-    if (!table) return;
-    saveRubric(response.question, response.id, table);
+    await saveRubric(response.question, response.id, response.answer, response.citations);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSaved(true);
   };
@@ -43,180 +41,116 @@ export function ResponseCard({ response }: ResponseCardProps) {
   };
 
   const markdownStyles = {
-    body: {
-      color: colors.textPrimary,
-      fontSize: 15,
-      lineHeight: 24,
-    },
-    heading2: {
-      color: colors.primary[700],
-      fontSize: 18,
-      fontWeight: '700' as const,
-      marginTop: 16,
-      marginBottom: 8,
-    },
-    heading3: {
-      color: colors.textPrimary,
-      fontSize: 16,
-      fontWeight: '600' as const,
-      marginTop: 12,
-      marginBottom: 6,
-    },
-    strong: {
-      color: colors.primary[700],
-      fontWeight: '600' as const,
-    },
-    table: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      marginVertical: 12,
-    },
-    th: {
-      backgroundColor: colors.primary[50],
-      padding: 8,
-      fontWeight: '600' as const,
-    },
-    td: {
-      padding: 8,
-      borderTopWidth: 1,
-      borderColor: colors.borderLight,
-    },
-    bullet_list: {
-      marginVertical: 8,
-    },
-    list_item: {
-      marginVertical: 4,
-    },
+    body: { color: colors.textPrimary, fontSize: 15, lineHeight: 24 },
+    heading2: { color: colors.primary[300], fontSize: 18, fontWeight: '700' as const, marginTop: 16, marginBottom: 8 },
+    heading3: { color: colors.primary[400], fontSize: 16, fontWeight: '600' as const, marginTop: 12, marginBottom: 6 },
+    strong: { color: colors.primary[300], fontWeight: '600' as const },
+    table: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, marginVertical: 12 },
+    th: { backgroundColor: colors.primary[50], padding: 8, fontWeight: '600' as const },
+    td: { padding: 8, borderTopWidth: 1, borderColor: colors.borderLight },
+    bullet_list: { marginVertical: 8 },
+    list_item: { marginVertical: 4 },
   };
 
   return (
-    <Card style={styles.card}>
-      <Card.Content>
-        {/* Query */}
-        {response.question && (
-          <View style={styles.queryContainer}>
-            <MaterialCommunityIcons
-              name="help-circle-outline"
-              size={18}
-              color={colors.primary[500]}
-            />
-            <Text style={styles.queryText}>{response.question}</Text>
-          </View>
-        )}
-
-        {response.question && <Divider style={styles.divider} />}
-
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <MaterialCommunityIcons
-              name="lightbulb-on"
-              size={20}
-              color={colors.primary[500]}
-            />
-            <Text style={styles.headerTitle}>Remedy Recommendations</Text>
-          </View>
-
-          <View style={styles.headerRight}>
-            {response.cached && (
-              <Chip
-                mode="flat"
-                compact
-                style={styles.cachedChip}
-                textStyle={styles.cachedChipText}
-              >
-                Cached
-              </Chip>
-            )}
-            <Text style={styles.processingTime}>
-              {response.processing_time_ms}ms
-            </Text>
-          </View>
+    <View style={styles.card}>
+      {/* Query bubble */}
+      {response.question && (
+        <View style={styles.queryBubble}>
+          <MaterialCommunityIcons name="help-circle-outline" size={16} color={colors.primary[400]} />
+          <Text style={styles.queryText}>{response.question}</Text>
         </View>
+      )}
 
-        <Divider style={styles.divider} />
-
-        {/* Answer - removed nested ScrollView and maxHeight */}
-        <View style={styles.answerContainer}>
-          <Markdown style={markdownStyles}>{response.answer}</Markdown>
+      {/* Answer header */}
+      <View style={styles.answerHeader}>
+        <View style={styles.answerHeaderLeft}>
+          <View style={styles.aiDot} />
+          <Text style={styles.answerHeaderTitle}>Clinical Analysis</Text>
         </View>
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          {rubricAvailable && (
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleSave}
-              disabled={alreadySaved || saved}
-            >
-              <MaterialCommunityIcons
-                name={alreadySaved || saved ? 'bookmark-check' : 'bookmark-outline'}
-                size={18}
-                color={alreadySaved || saved ? colors.success : colors.textSecondary}
-              />
-              <Text
-                style={[
-                  styles.actionText,
-                  (alreadySaved || saved) && styles.actionTextSuccess,
-                ]}
-              >
-                {alreadySaved || saved ? 'Saved' : 'Save Rubric'}
-              </Text>
-            </TouchableOpacity>
+        <View style={styles.answerHeaderRight}>
+          {response.cached && (
+            <View style={styles.cachedBadge}>
+              <Text style={styles.cachedBadgeText}>Cached</Text>
+            </View>
           )}
+          <Text style={styles.processingTime}>{response.processing_time_ms}ms</Text>
+        </View>
+      </View>
+
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Markdown answer */}
+      <View style={styles.answerBody}>
+        <Markdown style={markdownStyles}>{response.answer}</Markdown>
+      </View>
+
+      {/* Action row */}
+      <View style={styles.actions}>
+        {rubricAvailable && (
           <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleCopy}
+            style={[styles.actionBtn, (alreadySaved || saved) && styles.actionBtnSuccess]}
+            onPress={handleSave}
+            disabled={alreadySaved || saved}
+            activeOpacity={0.7}
           >
             <MaterialCommunityIcons
-              name={copied ? 'check' : 'content-copy'}
-              size={18}
-              color={copied ? colors.success : colors.textSecondary}
+              name={alreadySaved || saved ? 'bookmark-check' : 'bookmark-outline'}
+              size={16}
+              color={alreadySaved || saved ? colors.success : colors.textSecondary}
             />
-            <Text style={[styles.actionText, copied && styles.actionTextSuccess]}>
-              {copied ? 'Copied!' : 'Copy'}
+            <Text style={[styles.actionBtnText, (alreadySaved || saved) && styles.actionBtnTextSuccess]}>
+              {alreadySaved || saved ? 'Saved' : 'Save Rubric'}
             </Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Sources */}
-        {response.citations.length > 0 && (
-          <>
-            <Divider style={styles.divider} />
-
-            <TouchableOpacity
-              style={styles.sourcesHeader}
-              onPress={() => setShowSources(!showSources)}
-            >
-              <View style={styles.sourcesHeaderLeft}>
-                <MaterialCommunityIcons
-                  name="book-open-page-variant"
-                  size={18}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.sourcesTitle}>
-                  Sources ({response.citations.length})
-                </Text>
-              </View>
-              <MaterialCommunityIcons
-                name={showSources ? 'chevron-up' : 'chevron-down'}
-                size={24}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-
-            {showSources && (
-              <View style={styles.sourcesList}>
-                {response.citations.map((citation, index) => (
-                  <SourceItem key={index} citation={citation} index={index} />
-                ))}
-              </View>
-            )}
-          </>
         )}
-      </Card.Content>
-    </Card>
+        <TouchableOpacity
+          style={[styles.actionBtn, copied && styles.actionBtnSuccess]}
+          onPress={handleCopy}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons
+            name={copied ? 'check' : 'content-copy'}
+            size={16}
+            color={copied ? colors.success : colors.textSecondary}
+          />
+          <Text style={[styles.actionBtnText, copied && styles.actionBtnTextSuccess]}>
+            {copied ? 'Copied!' : 'Copy'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Sources */}
+      {response.citations.length > 0 && (
+        <>
+          <View style={styles.divider} />
+          <TouchableOpacity
+            style={styles.sourcesToggle}
+            onPress={() => setShowSources(!showSources)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sourcesToggleLeft}>
+              <MaterialCommunityIcons name="database-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.sourcesToggleText}>Sources ({response.citations.length})</Text>
+            </View>
+            <MaterialCommunityIcons
+              name={showSources ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {showSources && (
+            <View style={styles.sourcesList}>
+              {response.citations.map((citation, index) => (
+                <SourceItem key={index} citation={citation} index={index} />
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
   );
 }
 
@@ -224,151 +158,140 @@ function SourceItem({ citation, index }: { citation: Citation; index: number }) 
   return (
     <View style={styles.sourceItem}>
       <View style={styles.sourceHeader}>
-        <Text style={styles.sourceNumber}>[{index + 1}]</Text>
-        <Text style={styles.sourceName}>{citation.source}</Text>
-        {citation.page && (
-          <Text style={styles.sourcePage}>p. {citation.page}</Text>
-        )}
+        <View style={styles.sourceIndexBadge}>
+          <Text style={styles.sourceIndexText}>{index + 1}</Text>
+        </View>
+        <Text style={styles.sourceName} numberOfLines={1}>{citation.source}</Text>
+        {citation.page && <Text style={styles.sourcePage}>p.{citation.page}</Text>}
       </View>
-      <Text style={styles.sourceExcerpt} numberOfLines={3}>
-        {citation.excerpt}
-      </Text>
+      <Text style={styles.sourceExcerpt} numberOfLines={3}>{citation.excerpt}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    marginVertical: 8,
-    elevation: 2,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary[500],
+    overflow: 'hidden',
+    marginVertical: 4,
   },
-  queryContainer: {
+
+  // Query bubble
+  queryBubble: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
     backgroundColor: colors.primary[50],
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    padding: 14,
+    margin: 16,
+    marginBottom: 0,
+    borderRadius: 12,
   },
   queryText: {
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: colors.primary[800],
+    color: colors.textPrimary,
     lineHeight: 20,
   },
-  header: {
+
+  // Answer header
+  answerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  answerHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  aiDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary[500],
+    shadowColor: colors.glowTeal,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
   },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cachedChip: {
+  answerHeaderTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, letterSpacing: 0.2 },
+  answerHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cachedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     backgroundColor: colors.primary[50],
-    height: 24,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
   },
-  cachedChipText: {
-    fontSize: 10,
-    color: colors.primary[700],
-  },
-  processingTime: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  divider: {
-    marginVertical: 12,
-  },
-  answerContainer: {
-    // No maxHeight - let the parent ScrollView handle scrolling
-  },
+  cachedBadgeText: { fontSize: 10, fontWeight: '700', color: colors.primary[400], letterSpacing: 0.5 },
+  processingTime: { fontSize: 11, color: colors.textSecondary },
+
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 12, marginHorizontal: 16 },
+
+  answerBody: { paddingHorizontal: 16, paddingBottom: 4 },
+
+  // Actions
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 12,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  actionButton: {
+  actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 8,
+    gap: 5,
+    paddingVertical: 7,
     paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceHigh,
   },
-  actionText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  actionTextSuccess: {
-    color: colors.success,
-  },
-  sourcesHeader: {
+  actionBtnSuccess: { borderColor: 'rgba(34,197,94,0.3)', backgroundColor: 'rgba(34,197,94,0.08)' },
+  actionBtnText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  actionBtnTextSuccess: { color: colors.success },
+
+  // Sources
+  sourcesToggle: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  sourcesHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sourcesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  sourcesList: {
-    marginTop: 8,
-  },
+  sourcesToggleLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sourcesToggleText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+
+  sourcesList: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
   sourceItem: {
-    backgroundColor: colors.neutral[50],
-    borderRadius: 8,
+    backgroundColor: colors.surfaceHigh,
+    borderRadius: 10,
     padding: 12,
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
-  sourceHeader: {
-    flexDirection: 'row',
+  sourceHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  sourceIndexBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    backgroundColor: colors.primary[100],
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    justifyContent: 'center',
   },
-  sourceNumber: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.primary[500],
-  },
-  sourceName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  sourcePage: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  sourceExcerpt: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
+  sourceIndexText: { fontSize: 11, fontWeight: '700', color: colors.primary[400] },
+  sourceName: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
+  sourcePage: { fontSize: 11, color: colors.textSecondary },
+  sourceExcerpt: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
 });
 
 export default ResponseCard;
