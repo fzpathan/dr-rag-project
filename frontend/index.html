@@ -3,21 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DR-RAG — Homeopathy Remedy Finder</title>
+    <title>DR-RAG — AI Homeopathy Clinical Assistant</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 </head>
 <body>
 
-<!-- ─── Auth Screen ─────────────────────────────────────────── -->
+<!-- ─── Landing / Auth Screen ────────────────────────────────── -->
 <div id="auth-screen" class="hidden">
-    <div class="auth-wrap">
-        <div class="auth-brand">
-            <div class="brand-icon">⚕</div>
-            <h1>DR-RAG</h1>
-            <p>Homeopathic Repertorization Assistant</p>
+
+    <!-- Nav -->
+    <nav class="ln-nav">
+        <div class="ln-nav-inner">
+            <div class="ln-brand">
+                <span class="ln-brand-icon">⚕</span>
+                <span class="ln-brand-name">DR-RAG</span>
+            </div>
+            <div class="ln-nav-links">
+                <a href="#ln-features" class="ln-nav-link">Features</a>
+                <a href="#ln-how" class="ln-nav-link">How It Works</a>
+                <button class="ln-btn-ghost-sm" onclick="showAuth('login')">Sign In</button>
+                <button class="ln-btn-accent" onclick="showAuth('register')">Get Access</button>
+            </div>
+            <button class="ln-hamburger" id="ln-hamburger" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
         </div>
-        <div id="auth-card" class="auth-card"></div>
+        <div class="ln-mobile-menu hidden" id="ln-mobile-menu">
+            <a href="#ln-features" class="ln-mobile-link" id="ln-mob-feat">Features</a>
+            <a href="#ln-how" class="ln-mobile-link" id="ln-mob-how">How It Works</a>
+            <button class="ln-mobile-link" onclick="showAuth('login')">Sign In</button>
+            <button class="ln-btn-accent ln-btn-accent-full" onclick="showAuth('register')">Get Access</button>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="ln-hero">
+        <div class="ln-orb ln-orb-1"></div>
+        <div class="ln-orb ln-orb-2"></div>
+        <div class="ln-orb ln-orb-3"></div>
+        <div class="ln-hero-inner">
+            <div class="ln-hero-badge">
+                <span class="ln-badge-dot"></span>
+                Classical Texts · Real-time AI · Doctor-only Access
+            </div>
+            <h1 class="ln-hero-h1">
+                Repertorize smarter.<br>
+                <span class="ln-gradient-text">Prescribe with confidence.</span>
+            </h1>
+            <p class="ln-hero-sub">
+                DR-RAG is an AI-powered clinical assistant built for classical homeopaths.
+                It searches Kent, Phatak, Boericke and more in real time — delivering
+                precise remedy recommendations with full source citations.
+            </p>
+            <div class="ln-hero-actions">
+                <button class="ln-btn-cta" onclick="showAuth('register')">
+                    Get Started Free
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+                <button class="ln-btn-ghost" onclick="showAuth('login')">Sign In</button>
+            </div>
+            <div class="ln-hero-stats">
+                <div class="ln-stat">
+                    <span class="ln-stat-num">10+</span>
+                    <span class="ln-stat-label">Classical Texts</span>
+                </div>
+                <div class="ln-stat-divider"></div>
+                <div class="ln-stat">
+                    <span class="ln-stat-num">Real-time</span>
+                    <span class="ln-stat-label">Streaming Results</span>
+                </div>
+                <div class="ln-stat-divider"></div>
+                <div class="ln-stat">
+                    <span class="ln-stat-num">100%</span>
+                    <span class="ln-stat-label">Private & Secure</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero visual: mock terminal -->
+        <div class="ln-hero-visual">
+            <div class="ln-terminal">
+                <div class="ln-terminal-bar">
+                    <span class="ln-dot red"></span>
+                    <span class="ln-dot yellow"></span>
+                    <span class="ln-dot green"></span>
+                    <span class="ln-terminal-title">DR-RAG · Query</span>
+                </div>
+                <div class="ln-terminal-body">
+                    <p class="ln-t-label">Symptoms</p>
+                    <p class="ln-t-query">"Anxiety at midnight, restlessness, fear of death, thirst for cold water in small sips..."</p>
+                    <div class="ln-t-divider"></div>
+                    <p class="ln-t-label">Top Remedy</p>
+                    <p class="ln-t-remedy">Arsenicum Album <span class="ln-t-badge">High confidence</span></p>
+                    <p class="ln-t-source">Kent Repertory · Phatak Materia Medica · Boericke</p>
+                    <div class="ln-t-citations">
+                        <span class="ln-t-cite">📖 Kent p.42</span>
+                        <span class="ln-t-cite">📖 Phatak p.89</span>
+                        <span class="ln-t-cite">📖 Boericke p.127</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Logos / Trust bar -->
+    <div class="ln-trust">
+        <p class="ln-trust-label">Sourced from authoritative classical texts</p>
+        <div class="ln-trust-books">
+            <span>Kent Repertory</span>
+            <span>Phatak Materia Medica</span>
+            <span>Boericke</span>
+            <span>Hahnemann Organon</span>
+            <span>Sankaran</span>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <section class="ln-section" id="ln-features">
+        <div class="ln-section-inner">
+            <p class="ln-section-eyebrow">Features</p>
+            <h2 class="ln-section-h2">Everything you need at the bedside</h2>
+            <p class="ln-section-sub">Built exclusively for classical homeopathic practitioners. No fluff, no noise — just clinical precision.</p>
+            <div class="ln-features-grid">
+                <div class="ln-feat-card">
+                    <div class="ln-feat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                    <h3>AI Repertorization</h3>
+                    <p>Describe symptoms in plain language. The AI searches multiple classical texts simultaneously and ranks remedies by relevance.</p>
+                </div>
+                <div class="ln-feat-card">
+                    <div class="ln-feat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    </div>
+                    <h3>Voice Input</h3>
+                    <p>Speak your case notes directly. Whisper-powered transcription supports multiple languages so you can work naturally.</p>
+                </div>
+                <div class="ln-feat-card">
+                    <div class="ln-feat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3>Patient Records</h3>
+                    <p>Maintain a complete per-patient case file. Records are private to you — no other doctor can access your patients.</p>
+                </div>
+                <div class="ln-feat-card">
+                    <div class="ln-feat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h3>Saved Rubrics</h3>
+                    <p>Bookmark any successful analysis as a named rubric. Recall proven case patterns instantly across sessions and devices.</p>
+                </div>
+                <div class="ln-feat-card">
+                    <div class="ln-feat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                    </div>
+                    <h3>Query History</h3>
+                    <p>Every query is automatically saved server-side. Review past analyses in full, with all citations intact, at any time.</p>
+                </div>
+                <div class="ln-feat-card">
+                    <div class="ln-feat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <h3>Secure by Design</h3>
+                    <p>JWT authentication, per-user data isolation, and HTTPS end-to-end. Your clinical data never leaves your account.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="ln-section ln-section-alt" id="ln-how">
+        <div class="ln-section-inner">
+            <p class="ln-section-eyebrow">How It Works</p>
+            <h2 class="ln-section-h2">From symptoms to remedy in seconds</h2>
+            <p class="ln-section-sub">No training required. If you can describe a case, DR-RAG can help you repertorize it.</p>
+            <div class="ln-steps">
+                <div class="ln-step">
+                    <div class="ln-step-num">01</div>
+                    <div class="ln-step-body">
+                        <h3>Describe the symptoms</h3>
+                        <p>Type or dictate the presenting symptoms, modalities, and mentals in plain language. No rubric codes needed.</p>
+                    </div>
+                </div>
+                <div class="ln-step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </div>
+                <div class="ln-step">
+                    <div class="ln-step-num">02</div>
+                    <div class="ln-step-body">
+                        <h3>AI searches classical texts</h3>
+                        <p>A vector-search retrieval engine scans Kent, Phatak, Boericke and more — finding the most clinically relevant passages.</p>
+                    </div>
+                </div>
+                <div class="ln-step-arrow">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </div>
+                <div class="ln-step">
+                    <div class="ln-step-num">03</div>
+                    <div class="ln-step-body">
+                        <h3>Receive ranked recommendations</h3>
+                        <p>Results stream in real time with remedy rankings, dosage guidance, and full source citations you can expand and verify.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="ln-section" id="ln-testimonials">
+        <div class="ln-section-inner">
+            <p class="ln-section-eyebrow">Testimonials</p>
+            <h2 class="ln-section-h2">Trusted by practising homeopaths</h2>
+            <div class="ln-testi-grid">
+                <div class="ln-testi-card">
+                    <div class="ln-testi-stars">★★★★★</div>
+                    <p>"DR-RAG has cut my repertorization time by more than half. The source citations mean I can verify every suggestion against the original text — which is exactly how classical practice should work."</p>
+                    <div class="ln-testi-author">
+                        <div class="ln-testi-avatar">SK</div>
+                        <div>
+                            <strong>Dr. Suresh K.</strong>
+                            <small>Classical Homeopath, Mumbai</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="ln-testi-card">
+                    <div class="ln-testi-stars">★★★★★</div>
+                    <p>"The voice input is a game-changer for clinic. I describe the case as the patient talks — by the time the consultation ends, my analysis is ready. The patient records feature keeps everything organised."</p>
+                    <div class="ln-testi-author">
+                        <div class="ln-testi-avatar">RP</div>
+                        <div>
+                            <strong>Dr. Rania P.</strong>
+                            <small>Integrative Practitioner, Cairo</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="ln-testi-card">
+                    <div class="ln-testi-stars">★★★★★</div>
+                    <p>"I was sceptical at first — I've been practicing for 22 years. But this tool genuinely respects classical methodology. It cross-references correctly and never replaces clinical judgement, it supports it."</p>
+                    <div class="ln-testi-author">
+                        <div class="ln-testi-avatar">AH</div>
+                        <div>
+                            <strong>Dr. Amira H.</strong>
+                            <small>Senior Homeopath, London</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Banner -->
+    <section class="ln-cta-banner">
+        <div class="ln-orb ln-orb-cta"></div>
+        <div class="ln-cta-inner">
+            <h2>Ready to elevate your practice?</h2>
+            <p>Join practitioners using DR-RAG to repertorize faster, with full classical backing.</p>
+            <button class="ln-btn-cta" onclick="showAuth('register')">
+                Get Started Free
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="ln-footer">
+        <div class="ln-footer-inner">
+            <div class="ln-footer-brand">
+                <span class="ln-brand-icon">⚕</span>
+                <span class="ln-brand-name">DR-RAG</span>
+                <p>AI-powered homeopathy clinical assistant for classical practitioners.</p>
+            </div>
+            <div class="ln-footer-links">
+                <div class="ln-footer-col">
+                    <strong>Product</strong>
+                    <a href="#ln-features">Features</a>
+                    <a href="#ln-how">How It Works</a>
+                    <a href="#ln-testimonials">Testimonials</a>
+                </div>
+                <div class="ln-footer-col">
+                    <strong>Account</strong>
+                    <a href="#" onclick="showAuth('login'); return false;">Sign In</a>
+                    <a href="#" onclick="showAuth('register'); return false;">Register</a>
+                </div>
+            </div>
+        </div>
+        <div class="ln-footer-bottom">
+            <span>© 2025 DR-RAG. Built for classical homeopaths.</span>
+            <span>Doctor-facing tool only · Not for patient self-diagnosis</span>
+        </div>
+    </footer>
+
+    <!-- Auth Modal (shown on Sign In / Get Started) -->
+    <div id="auth-modal" class="ln-auth-modal hidden">
+        <div class="ln-auth-backdrop" id="ln-auth-backdrop"></div>
+        <div class="ln-auth-panel">
+            <button class="ln-auth-close" id="ln-auth-close" aria-label="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="ln-auth-brand">
+                <span class="ln-brand-icon">⚕</span>
+                <span class="ln-brand-name">DR-RAG</span>
+            </div>
+            <div id="auth-card"></div>
+        </div>
     </div>
 </div>
 
@@ -61,7 +350,7 @@
     <main class="main-content" id="main-content"></main>
 </div>
 
-<!-- ─── Toast ──────────────────────────────────────────────── -->
+<!-- ─── Toast ────────────────────────────────────────────────── -->
 <div id="toast" class="toast hidden"></div>
 
 <script src="app.js"></script>

@@ -173,11 +173,30 @@ async function initApp() {
 function showAuth(form) {
     document.getElementById('app-screen').classList.add('hidden');
     document.getElementById('auth-screen').classList.remove('hidden');
+    const modal = document.getElementById('auth-modal');
+    modal.classList.remove('hidden');
     renderAuthCard(form);
+    // Close modal handlers
+    document.getElementById('ln-auth-close').onclick = closeLandingModal;
+    document.getElementById('ln-auth-backdrop').onclick = closeLandingModal;
+    // Mobile menu toggle
+    document.getElementById('ln-hamburger').onclick = () => {
+        document.getElementById('ln-mobile-menu').classList.toggle('hidden');
+    };
+    // Close mobile menu nav links
+    ['ln-mob-feat','ln-mob-how'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.onclick = () => document.getElementById('ln-mobile-menu').classList.add('hidden');
+    });
+}
+
+function closeLandingModal() {
+    document.getElementById('auth-modal').classList.add('hidden');
 }
 
 async function showApp() {
     document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('auth-modal').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
     updateSidebarUser();
     await loadAndApplySettings();
