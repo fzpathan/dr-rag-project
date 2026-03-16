@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — ClinIQ</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal:       #0d9488;
+    --teal-light: #14b8a6;
+    --teal-dim:   rgba(13,148,136,.15);
+    --bg:         #f1f5f9;
+    --surface:    #ffffff;
+    --text:       #1e293b;
+    --muted:      #64748b;
+    --border:     #e2e8f0;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+  }
+
+  /* ── Particle canvas ── */
+  #canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  /* ── Brand ── */
+  .brand {
+    position: fixed;
+    top: 1.5rem;
+    left: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .brand-icon { font-size: 1.25rem; color: var(--teal); }
+  .brand-name { font-size: 1rem; font-weight: 700; color: var(--teal); letter-spacing: -.3px; }
+
+  /* ── Monitor card ── */
+  .monitor {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.5rem 3rem 2rem;
+    max-width: 580px;
+    width: 100%;
+    box-shadow: 0 4px 40px rgba(0,0,0,.06), 0 0 0 1px rgba(13,148,136,.06);
+    position: relative;
+  }
+
+  /* status strip at top */
+  .monitor::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--teal), var(--teal-light));
+    border-radius: 24px 24px 0 0;
+  }
+
+  /* ── Monitor header bar ── */
+  .monitor-bar {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: 1.75rem;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.red    { background: #f87171; }
+  .dot.yellow { background: #fbbf24; }
+  .dot.green  { background: #34d399; }
+  .monitor-label {
+    margin-left: auto;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* ── EKG SVG ── */
+  .ekg-wrap {
+    width: 100%;
+    height: 72px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+  .ekg-line {
+    stroke: var(--teal);
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    animation: drawEKG 1.4s ease forwards .3s, flatline 1.2s ease-in-out 2.2s forwards;
+    filter: drop-shadow(0 0 6px rgba(13,148,136,.7));
+  }
+  @keyframes drawEKG {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes flatline {
+    0%   { d: path("M0,36 L40,36 L50,4 L60,68 L70,20 L80,52 L90,36 L540,36"); }
+    100% { d: path("M0,36 L540,36"); stroke: #94a3b8; filter: none; }
+  }
+
+  /* ── 404 ── */
+  .code-404 {
+    font-size: clamp(5rem, 18vw, 8rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.05em;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-light) 60%, #67e8f9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 24px rgba(13,148,136,.25));
+    margin-bottom: .5rem;
+    animation: glow 2.4s ease-in-out infinite alternate;
+  }
+  @keyframes glow {
+    from { filter: drop-shadow(0 0 10px rgba(13,148,136,.2)); }
+    to   { filter: drop-shadow(0 0 28px rgba(13,148,136,.5)); }
+  }
+
+  /* ── Clinical readout ── */
+  .readout {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: var(--teal-dim);
+    border: 1px solid rgba(13,148,136,.2);
+    border-radius: 8px;
+    padding: .35rem .75rem;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 1.25rem;
+  }
+  .readout-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal);
+    animation: blink 1.2s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: .6rem;
+    letter-spacing: -.02em;
+  }
+
+  .sub {
+    font-size: .9rem;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 2rem;
+    max-width: 380px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── Prescription block ── */
+  .prescription {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal);
+    border-radius: 10px;
+    padding: .85rem 1.1rem;
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+  .rx-label {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .4rem;
+  }
+  .rx-row {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    font-size: .82rem;
+    color: var(--text);
+    margin-bottom: .2rem;
+  }
+  .rx-key { color: var(--muted); min-width: 80px; }
+  .rx-val { font-weight: 500; }
+  .rx-remedy { color: var(--teal); font-weight: 600; }
+
+  /* ── Actions ── */
+  .actions { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+
+  .btn-home {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .7rem 1.4rem;
+    background: var(--teal);
+    color: #fff;
+    border-radius: 10px;
+    font-size: .9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .18s, transform .12s, box-shadow .18s;
+    box-shadow: 0 4px 16px rgba(13,148,136,.3);
+  }
+  .btn-home:hover {
+    background: #0f766e;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(13,148,136,.4);
+  }
+  .btn-home svg { transition: transform .18s; }
+  .btn-home:hover svg { transform: translateX(3px); }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .7rem 1.2rem;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 10px;
+    font-size: .9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: border-color .18s, color .18s, background .18s;
+  }
+  .btn-back:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+
+  /* ── Footer note ── */
+  .footer-note {
+    position: fixed;
+    bottom: 1.5rem;
+    font-size: .72rem;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<a class="brand" href="/">
+  <span class="brand-icon">⚕</span>
+  <span class="brand-name">ClinIQ</span>
+</a>
+
+<div class="page">
+  <div class="monitor">
+
+    <!-- Monitor header dots -->
+    <div class="monitor-bar">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="monitor-label">ClinIQ · Diagnostics</span>
+    </div>
+
+    <!-- EKG -->
+    <div class="ekg-wrap">
+      <svg viewBox="0 0 540 72" preserveAspectRatio="none" width="100%" height="100%">
+        <path class="ekg-line"
+          d="M0,36 L40,36 L50,4 L60,68 L70,20 L80,52 L90,36 L540,36" />
+      </svg>
+    </div>
+
+    <!-- Status badge -->
+    <div class="readout">
+      <span class="readout-dot"></span>
+      Vitals Critical · Error 404
+    </div>
+
+    <!-- 404 heading -->
+    <div class="code-404">404</div>
+
+    <h1 class="heading">No Remedy Found</h1>
+    <p class="sub">
+      The page you're looking for has vanished like an unconfirmed symptom — it may have been moved, deleted, or never existed in the repertory.
+    </p>
+
+    <!-- Prescription-style card -->
+    <div class="prescription">
+      <div class="rx-label">℞ &nbsp;Diagnostic Readout</div>
+      <div class="rx-row">
+        <span class="rx-key">Symptom</span>
+        <span class="rx-val">Page not found in knowledge base</span>
+      </div>
+      <div class="rx-row">
+        <span class="rx-key">Modality</span>
+        <span class="rx-val">Worse on direct URL access</span>
+      </div>
+      <div class="rx-row">
+        <span class="rx-key">Remedy</span>
+        <span class="rx-val rx-remedy">Return to ClinIQ Home &mdash; 200M</span>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="actions">
+      <a class="btn-home" href="/">
+        Return to Clinic
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+      <a class="btn-back" href="javascript:history.back()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Go Back
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<span class="footer-note">ClinIQ · Doctor-facing tool only · Not for patient self-diagnosis</span>
+
+<script>
+// ── Floating molecule particles ──────────────────────────────────────────────
+(function () {
+  const canvas = document.getElementById('canvas');
+  const ctx    = canvas.getContext('2d');
+  const TEAL   = 'rgba(13,148,136,';
+  let W, H, particles;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function Particle() {
+    this.reset = function () {
+      this.x    = Math.random() * W;
+      this.y    = Math.random() * H;
+      this.r    = 2 + Math.random() * 3;
+      this.vx   = (Math.random() - .5) * .4;
+      this.vy   = (Math.random() - .5) * .4;
+      this.a    = .06 + Math.random() * .12;
+      // each particle may have 1-2 bonds
+      this.bonds = Math.floor(Math.random() * 2);
+    };
+    this.reset();
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: 55 }, () => new Particle());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw bonds between nearby particles
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx   = particles[i].x - particles[j].x;
+        const dy   = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 110) {
+          const alpha = (1 - dist / 110) * .12;
+          ctx.beginPath();
+          ctx.strokeStyle = TEAL + alpha + ')';
+          ctx.lineWidth   = 1;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw particles
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = TEAL + p.a + ')';
+      ctx.fill();
+
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -20 || p.x > W + 20 || p.y < -20 || p.y > H + 20) p.reset();
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  init();
+  draw();
+})();
+</script>
+</body>
+</html>
