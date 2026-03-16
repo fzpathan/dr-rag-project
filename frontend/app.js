@@ -1374,5 +1374,35 @@ function showToast(msg, type = 'info') {
     toastTimer = setTimeout(() => t.classList.add('hidden'), 3200);
 }
 
+// ─── Theme ────────────────────────────────────────────────────
+function initTheme() {
+    const saved = localStorage.getItem('cliniq_theme') || 'dark';
+    applyTheme(saved);
+    document.getElementById('ln-theme-toggle').addEventListener('click', toggleTheme);
+    const mob = document.getElementById('ln-theme-toggle-mob');
+    if (mob) mob.addEventListener('click', toggleTheme);
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cliniq_theme', theme);
+    const isDark = theme === 'dark';
+    const icon  = isDark ? '☀️' : '🌙';
+    const label = isDark ? 'Light' : 'Dark';
+    ['ln-theme-icon','ln-theme-icon-mob'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = icon;
+    });
+    ['ln-theme-label','ln-theme-label-mob'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = label;
+    });
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
 // ─── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', () => { initTheme(); initApp(); });

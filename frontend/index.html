@@ -8,6 +8,13 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 </head>
 <body>
+<script>
+  // Apply saved theme before first paint to prevent flash
+  (function(){
+    const t = localStorage.getItem('cliniq_theme') || 'dark';
+    if (t === 'light') document.documentElement.setAttribute('data-theme','light');
+  })();
+</script>
 
 <!-- ─── Landing / Auth Screen ────────────────────────────────── -->
 <div id="auth-screen" class="hidden">
@@ -22,6 +29,10 @@
             <div class="ln-nav-links">
                 <a href="#ln-features" class="ln-nav-link">Features</a>
                 <a href="#ln-how" class="ln-nav-link">How It Works</a>
+                <button class="ln-theme-toggle" id="ln-theme-toggle" aria-label="Toggle theme" title="Toggle light / dark">
+                    <span class="ln-theme-icon" id="ln-theme-icon"></span>
+                    <span class="ln-theme-label" id="ln-theme-label"></span>
+                </button>
                 <button class="ln-btn-ghost-sm" onclick="showAuth('login')">Sign In</button>
                 <button class="ln-btn-accent" onclick="showAuth('register')">Get Access</button>
             </div>
@@ -34,6 +45,10 @@
             <a href="#ln-how" class="ln-mobile-link" id="ln-mob-how">How It Works</a>
             <button class="ln-mobile-link" onclick="showAuth('login')">Sign In</button>
             <button class="ln-btn-accent ln-btn-accent-full" onclick="showAuth('register')">Get Access</button>
+            <button class="ln-theme-toggle ln-theme-toggle-mobile" id="ln-theme-toggle-mob" aria-label="Toggle theme">
+                <span class="ln-theme-icon" id="ln-theme-icon-mob"></span>
+                <span class="ln-theme-label" id="ln-theme-label-mob"></span>
+            </button>
         </div>
     </nav>
 
