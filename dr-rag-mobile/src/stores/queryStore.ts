@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, ACCESS_TOKEN_KEY, endpoints } from '../constants/api';
 import type { QueryRequest, QueryResponse, QueryHistoryItem } from '../types/query';
 
-const HISTORY_STORAGE_KEY = '@dr_rag_history';
+const HISTORY_STORAGE_KEY = '@cliniq_history';
 const MAX_HISTORY_ITEMS = 50;
 
 interface QueryStore {

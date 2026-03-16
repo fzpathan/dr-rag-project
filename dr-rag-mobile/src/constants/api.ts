@@ -11,8 +11,8 @@ const DEVELOPMENT_URL = 'http://13.233.129.108/api/v1';
 export const API_BASE_URL = __DEV__ ? DEVELOPMENT_URL : PRODUCTION_URL;
 
 // Token storage keys (must match api.ts)
-export const ACCESS_TOKEN_KEY = '@dr_rag_access_token';
-export const REFRESH_TOKEN_KEY = '@dr_rag_refresh_token';
+export const ACCESS_TOKEN_KEY = '@cliniq_access_token';
+export const REFRESH_TOKEN_KEY = '@cliniq_refresh_token';
 
 // API Endpoints
 export const endpoints = {

@@ -1,5 +1,5 @@
 /**
- * Color palette for DR-RAG mobile app.
+ * Color palette for ClinIQ mobile app.
  * Medical/professional theme with calming teal primary.
  */
 

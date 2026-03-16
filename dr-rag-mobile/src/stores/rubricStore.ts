@@ -70,7 +70,7 @@ export const useRubricStore = create<RubricStore>()(
       },
     }),
     {
-      name: 'dr-rag-saved-rubrics',
+      name: 'cliniq-saved-rubrics',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
     }

@@ -9,7 +9,7 @@ from api.database import SessionLocal, create_tables
 from api.utils.security import get_password_hash
 from api.database import User
 
-ADMIN_EMAIL = "admin@drrag.com"
+ADMIN_EMAIL = "admin@cliniq.app"
 ADMIN_PASSWORD = "OmSaiRam123!"
 ADMIN_NAME = "Admin"
 

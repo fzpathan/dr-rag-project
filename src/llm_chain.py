@@ -231,8 +231,8 @@ def get_llm():
             api_key=config.OPENROUTER_API_KEY,
             base_url=config.OPENROUTER_BASE_URL,
             default_headers={
-                "HTTP-Referer": "https://dr-rag-api.run.app",
-                "X-Title": "DR-RAG Homeopathy Finder",
+                "HTTP-Referer": "https://cliniq-api.run.app",
+                "X-Title": "ClinIQ Homeopathy Assistant",
             },
             http_client=http_client,
         )

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "DR-RAG",
-    "slug": "dr-rag-mobile",
+    "name": "ClinIQ",
+    "slug": "cliniq-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "drrag",
+    "scheme": "cliniq",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.drrag.mobile",
+      "bundleIdentifier": "com.cliniq.mobile",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app uses the microphone to record voice queries for remedy search.",
         "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text."
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#00BFA5"
       },
-      "package": "com.drrag.mobile",
+      "package": "com.cliniq.mobile",
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ]

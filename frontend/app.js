@@ -35,20 +35,20 @@ const voice = {
 const store = {
     save() {
         try {
-            localStorage.setItem('drrag_tokens', JSON.stringify({ access: state.accessToken, refresh: state.refreshToken }));
-            localStorage.setItem('drrag_user', JSON.stringify(state.user));
+            localStorage.setItem('cliniq_tokens', JSON.stringify({ access: state.accessToken, refresh: state.refreshToken }));
+            localStorage.setItem('cliniq_user', JSON.stringify(state.user));
         } catch (e) { console.error('Storage save error:', e); }
     },
     load() {
         try {
-            const tokens = JSON.parse(localStorage.getItem('drrag_tokens') || 'null');
+            const tokens = JSON.parse(localStorage.getItem('cliniq_tokens') || 'null');
             if (tokens) { state.accessToken = tokens.access; state.refreshToken = tokens.refresh; }
-            state.user = JSON.parse(localStorage.getItem('drrag_user') || 'null');
+            state.user = JSON.parse(localStorage.getItem('cliniq_user') || 'null');
         } catch (e) { console.error('Storage load error:', e); }
     },
     clear() {
-        localStorage.removeItem('drrag_tokens');
-        localStorage.removeItem('drrag_user');
+        localStorage.removeItem('cliniq_tokens');
+        localStorage.removeItem('cliniq_user');
         state.accessToken = null;
         state.refreshToken = null;
         state.user = null;

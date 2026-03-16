@@ -1,11 +1,11 @@
 {
-  "name": "dr-rag-mobile",
+  "name": "cliniq-mobile",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest"
@@ -17,6 +17,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "axios": "^1.6.7",
     "expo": "~54.0.33",
+    "expo-audio": "^55.0.8",
     "expo-av": "~16.0.8",
     "expo-clipboard": "^8.0.8",
     "expo-constants": "~18.0.13",
@@ -37,7 +38,6 @@
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
-    "react-native-voice": "^0.3.0",
     "react-native-worklets": "^0.5.1",
     "zod": "^3.22.4",
     "zustand": "^4.5.1"

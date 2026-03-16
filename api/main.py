@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     Runs on startup and shutdown.
     """
     # Startup
-    logger.info("Starting DR-RAG API...")
+    logger.info("Starting ClinIQ API...")
 
     # Create database tables
     create_tables()
@@ -42,27 +42,27 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"RAG service initialization warning: {e}")
 
-    logger.info("DR-RAG API started successfully")
+    logger.info("ClinIQ API started successfully")
 
     yield
 
     # Shutdown
-    logger.info("Shutting down DR-RAG API...")
+    logger.info("Shutting down ClinIQ API...")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="DR-RAG API",
+    title="ClinIQ API",
     description="""
-    ## Homeopathy Remedy Finder API
+    ## ClinIQ API
 
-    This API provides access to the DR-RAG (Homeopathy Remedy Finder) system
-    through a RESTful interface designed for mobile applications.
+    This API provides access to the ClinIQ AI Homeopathy Clinical Assistant
+    through a RESTful interface designed for mobile and web applications.
 
     ### Features
 
     - **User Authentication**: JWT-based authentication with email/password
-    - **Remedy Queries**: AI-powered remedy recommendations from classical texts
+    - **Remedy Queries**: AI-powered remedy recommendations with clinical reasoning
     - **Caching**: Intelligent caching for faster repeated queries
 
     ### Authentication

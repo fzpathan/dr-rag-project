@@ -7,8 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, endpoints, timeouts } from '../constants/api';
 
 // Storage keys
-const ACCESS_TOKEN_KEY = '@dr_rag_access_token';
-const REFRESH_TOKEN_KEY = '@dr_rag_refresh_token';
+const ACCESS_TOKEN_KEY = '@cliniq_access_token';
+const REFRESH_TOKEN_KEY = '@cliniq_refresh_token';
 
 // Create axios instance
 const api = axios.create({

@@ -1,7 +1,7 @@
 services:
   api:
     build: .
-    container_name: dr-rag-api
+    container_name: cliniq-api
     restart: unless-stopped
     env_file: .env
     ports:
@@ -20,7 +20,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: dr-rag-nginx
+    container_name: cliniq-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -37,7 +37,7 @@ services:
 
   certbot:
     image: certbot/certbot
-    container_name: dr-rag-certbot
+    container_name: cliniq-certbot
     volumes:
       - certbot_etc:/etc/letsencrypt
       - certbot_var:/var/lib/letsencrypt

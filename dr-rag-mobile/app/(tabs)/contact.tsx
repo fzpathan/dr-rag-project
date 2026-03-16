@@ -33,20 +33,20 @@ const contactInfo = [
   {
     icon: 'email',
     label: 'Email',
-    value: 'support@drrag.com',
-    action: 'mailto:support@drrag.com',
+    value: 'support@cliniq.app',
+    action: 'mailto:support@cliniq.app',
   },
   {
     icon: 'web',
     label: 'Website',
-    value: 'www.drrag.com',
-    action: 'https://www.drrag.com',
+    value: 'www.cliniq.app',
+    action: 'https://www.cliniq.app',
   },
   {
     icon: 'twitter',
     label: 'Twitter',
-    value: '@drrag_app',
-    action: 'https://twitter.com/drrag_app',
+    value: '@cliniq_app',
+    action: 'https://twitter.com/cliniq_app',
   },
 ];
 

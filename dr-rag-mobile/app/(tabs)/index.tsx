@@ -71,7 +71,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <MaterialCommunityIcons name="leaf" size={26} color={colors.primary[500]} />
-            <Text style={styles.headerTitle}>DR-RAG</Text>
+            <Text style={styles.headerTitle}>ClinIQ</Text>
           </View>
           <Menu
             visible={menuVisible}

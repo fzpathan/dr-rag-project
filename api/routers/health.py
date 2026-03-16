@@ -57,8 +57,8 @@ async def root():
     Returns API information and documentation links.
     """
     return {
-        "name": "DR-RAG API",
-        "description": "Homeopathy Remedy Finder API",
+        "name": "ClinIQ API",
+        "description": "ClinIQ — AI Homeopathy Clinical Assistant",
         "version": "1.0.0",
         "docs": "/docs",
         "health": "/health",

@@ -23,7 +23,7 @@ from src.utils import sanitize_query
 # Page Configuration
 # =============================================================================
 st.set_page_config(
-    page_title="Homeopathy Remedy Finder",
+    page_title="ClinIQ — AI Homeopathy Assistant",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -70,7 +70,7 @@ def initialize_chain():
 # =============================================================================
 def main():
     # Header
-    st.title("🌿 Homeopathy Remedy Finder")
+    st.title("🌿 ClinIQ — AI Homeopathy Assistant")
     st.markdown("*Search remedies across classical homeopathy textbooks using AI*")
 
     # Initialize components

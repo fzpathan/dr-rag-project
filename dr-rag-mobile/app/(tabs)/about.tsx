@@ -59,7 +59,7 @@ export default function AboutScreen() {
               color={colors.primary[500]}
             />
           </View>
-          <Text style={styles.title}>Homeopathy Remedy Finder</Text>
+          <Text style={styles.title}>ClinIQ</Text>
           <Text style={styles.version}>Version 1.0.0</Text>
         </View>
 

@@ -1,3 +1,3 @@
 """
-FastAPI backend for DR-RAG mobile application.
+FastAPI backend for ClinIQ.
 """
