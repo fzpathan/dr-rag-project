@@ -703,7 +703,7 @@ body.theme-dark .history-item-header:hover { background: #334155; }
     justify-content: space-between;
     gap: 1rem;
 }
-.ln-brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; }
+.ln-brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; cursor: pointer; }
 .ln-brand-icon { font-size: 1.4rem; }
 .ln-brand-name { font-size: 1.1rem; font-weight: 700; color: #fff; letter-spacing: -.3px; }
 .ln-nav-links {
