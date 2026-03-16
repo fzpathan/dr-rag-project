@@ -926,20 +926,37 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 
 /* ─── Trust bar ────────────────────────────────────────────── */
 .ln-trust {
-    border-top: 1px solid rgba(255,255,255,.05);
-    border-bottom: 1px solid rgba(255,255,255,.05);
-    padding: 1.75rem 1.5rem;
+    border-top: 1px solid rgba(45,212,191,.12);
+    border-bottom: 1px solid rgba(45,212,191,.12);
+    padding: 2rem 1.5rem;
     text-align: center;
-    background: rgba(255,255,255,.02);
+    background: rgba(45,212,191,.04);
+    box-shadow: inset 0 1px 0 rgba(45,212,191,.08), inset 0 -1px 0 rgba(45,212,191,.08);
 }
-.ln-trust-label { font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #475569; margin-bottom: 1rem; }
+.ln-trust-label { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #5eead4; margin-bottom: 1.25rem; }
 .ln-trust-books {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 1.5rem 2.5rem;
+    gap: 1.25rem 2rem;
 }
-.ln-trust-books span { font-size: .9rem; font-weight: 600; color: #334155; }
+.ln-trust-books span {
+    font-size: .85rem;
+    font-weight: 600;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+}
+.ln-trust-books span::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2dd4bf;
+    flex-shrink: 0;
+}
 
 /* ─── Sections ─────────────────────────────────────────────── */
 .ln-section { padding: 6rem 1.5rem; }
@@ -1265,9 +1282,10 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 [data-theme="light"] .ln-stat-divider { background: rgba(0,0,0,.12); }
 
 /* Trust bar */
-[data-theme="light"] .ln-trust { background: rgba(0,0,0,.025); border-color: rgba(0,0,0,.07); }
-[data-theme="light"] .ln-trust-label { color: #64748b; }
-[data-theme="light"] .ln-trust-books span { color: #334155; }
+[data-theme="light"] .ln-trust { background: rgba(13,148,136,.05); border-color: rgba(13,148,136,.18); box-shadow: inset 0 1px 0 rgba(13,148,136,.1), inset 0 -1px 0 rgba(13,148,136,.1); }
+[data-theme="light"] .ln-trust-label { color: #0d9488; }
+[data-theme="light"] .ln-trust-books span { color: #475569; }
+[data-theme="light"] .ln-trust-books span::before { background: #0d9488; }
 
 /* Sections */
 [data-theme="light"] .ln-section-eyebrow { color: #0d9488; }
