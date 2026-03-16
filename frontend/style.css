@@ -910,15 +910,22 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 .ln-t-source { font-size: .75rem; color: #475569; margin-bottom: .875rem; }
 .ln-t-citations { display: flex; gap: .5rem; flex-wrap: wrap; }
 .ln-t-cite { font-size: .75rem; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); padding: .25rem .625rem; border-radius: 6px; color: #94a3b8; }
-.ln-t-repertory { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,.07); font-size: .72rem; }
-.ln-t-rep-header { display: grid; grid-template-columns: 1fr auto auto; gap: .75rem; padding: .35rem .75rem; background: rgba(255,255,255,.06); color: #475569; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: .65rem; }
-.ln-t-rep-row { display: grid; grid-template-columns: 1fr auto auto; gap: .75rem; padding: .3rem .75rem; align-items: center; border-top: 1px solid rgba(255,255,255,.05); color: #94a3b8; transition: background .15s; }
-.ln-t-rep-row:hover { background: rgba(255,255,255,.03); }
-.ln-t-rep-grade { font-weight: 700; font-size: .75rem; width: 1.2rem; text-align: center; }
+.ln-t-repertory { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,.07); font-size: .7rem; border-collapse: collapse; }
+.ln-t-repertory thead tr { background: #1a6fbd; }
+.ln-t-repertory thead th { padding: .35rem .6rem; font-weight: 700; color: #fff; text-align: left; font-size: .68rem; letter-spacing: .03em; }
+.ln-t-repertory thead th:not(:first-child) { text-align: center; min-width: 2.5rem; }
+.ln-t-repertory tbody tr { border-top: 1px solid rgba(255,255,255,.05); color: #94a3b8; transition: background .15s; }
+.ln-t-repertory tbody tr:nth-child(even) { background: rgba(255,255,255,.03); }
+.ln-t-repertory tbody tr:hover { background: rgba(29,107,189,.15); }
+.ln-t-repertory td { padding: .28rem .6rem; }
+.ln-t-repertory td:not(:first-child) { text-align: center; }
+.ln-t-repertory tfoot tr { border-top: 2px solid rgba(255,255,255,.12); }
+.ln-t-repertory tfoot td { padding: .35rem .6rem; color: #e2e8f0; }
+.ln-t-repertory tfoot td:not(:first-child) { text-align: center; color: #2dd4bf; }
+.ln-t-rep-grade { font-weight: 700; }
 .ln-t-rep-grade.g3 { color: #2dd4bf; }
 .ln-t-rep-grade.g2 { color: #38bdf8; }
 .ln-t-rep-grade.g1 { color: #94a3b8; }
-.ln-t-rep-row span:last-child { color: #475569; min-width: 3.5rem; text-align: right; }
 
 /* ─── Trust bar ────────────────────────────────────────────── */
 .ln-trust {
