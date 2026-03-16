@@ -22,8 +22,8 @@ from api.database import get_db, QueryHistory
 router = APIRouter(prefix="/query", tags=["Query"])
 
 
-def _save_history(db: Session, user_id: str, result: dict, cached: bool):
-    """Persist a completed query to the database."""
+def _save_history(db: Session, user_id: str, result: dict, cached: bool) -> str | None:
+    """Persist a completed query to the database. Returns the saved record's id."""
     try:
         item = QueryHistory(
             user_id=user_id,
@@ -36,8 +36,11 @@ def _save_history(db: Session, user_id: str, result: dict, cached: bool):
         )
         db.add(item)
         db.commit()
+        db.refresh(item)
+        return item.id
     except Exception:
         db.rollback()
+        return None
 
 
 @router.post("", response_model=QueryResponse)
@@ -149,15 +152,17 @@ async def query_remedy_stream(
                         done_data = data
                 except Exception:
                     pass
-            # Save completed query to history
+            # Save completed query to history and emit id in a final event
             if full_text:
-                _save_history(db, user_id, {
+                saved_id = _save_history(db, user_id, {
                     "question": clean_question,
                     "answer": full_text,
                     "citations": citations_data,
                     "sources_used": done_data.get("sources_used", []),
                     "processing_time_ms": done_data.get("processing_time_ms", 0),
                 }, cached=done_data.get("cached", False))
+                if saved_id:
+                    yield f"data: {json.dumps({'type': 'history_id', 'id': saved_id})}\n\n"
 
         return StreamingResponse(
             event_generator(),

@@ -112,7 +112,7 @@ async function apiRequest(method, path, body = null, isRetry = false) {
     return res.json();
 }
 
-async function apiQueryStream(question, topK, onCitations, onToken, onDone, onError) {
+async function apiQueryStream(question, topK, onCitations, onToken, onDone, onHistoryId, onError) {
     const headers = { 'Content-Type': 'application/json' };
     if (state.accessToken) headers['Authorization'] = `Bearer ${state.accessToken}`;
 
@@ -146,6 +146,7 @@ async function apiQueryStream(question, topK, onCitations, onToken, onDone, onEr
                     if (data.type === 'citations') onCitations(data.citations || []);
                     else if (data.type === 'token') onToken(data.content || '');
                     else if (data.type === 'done') onDone(data);
+                    else if (data.type === 'history_id') onHistoryId(data.id);
                 } catch {}
             }
         }
@@ -550,6 +551,8 @@ async function submitQuery() {
     let fullText = '';
     let citations = [];
 
+    let entry = null;
+
     await apiQueryStream(
         question, topK,
         (c) => { citations = c; },
@@ -564,8 +567,8 @@ async function submitQuery() {
                 ${data.cached ? '<span class="badge badge-cached">Cached</span>' : ''}
                 <span class="badge badge-time">${data.processing_time_ms}ms</span>`;
 
-            const entry = {
-                id: data.id || String(Date.now()),
+            entry = {
+                id: String(Date.now()),  // temporary; replaced by history_id event
                 question, answer: fullText, citations,
                 sources_used: data.sources_used || [],
                 processing_time_ms: data.processing_time_ms,
@@ -599,6 +602,14 @@ async function submitQuery() {
             }
 
             finishStreaming(btn);
+        },
+        (id) => {
+            // Patch entry with the real DB id once the server confirms the save
+            if (entry) {
+                entry.id = id;
+                const h = state.history.find(h => h === entry);
+                if (h) h.id = id;
+            }
         },
         (err) => {
             const body = document.getElementById('response-body');
