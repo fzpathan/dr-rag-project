@@ -922,10 +922,7 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 .ln-t-repertory tfoot tr { border-top: 2px solid rgba(255,255,255,.12); }
 .ln-t-repertory tfoot td { padding: .35rem .6rem; color: #e2e8f0; }
 .ln-t-repertory tfoot td:not(:first-child) { text-align: center; color: #2dd4bf; }
-.ln-t-rep-grade { font-weight: 700; }
-.ln-t-rep-grade.g3 { color: #2dd4bf; }
-.ln-t-rep-grade.g2 { color: #38bdf8; }
-.ln-t-rep-grade.g1 { color: #94a3b8; }
+.ln-t-rep-mark { color: #2dd4bf; font-weight: 700; font-size: .8rem; }
 
 /* ─── Trust bar ────────────────────────────────────────────── */
 .ln-trust {
