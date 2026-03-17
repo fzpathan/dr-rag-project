@@ -14,13 +14,13 @@ const state = {
     pendingSave: null,
     isStreaming: false,
     settings: {
-        show_voice: true,
-        show_advanced_options: true,
-        show_citations: true,
+        show_voice: false,
+        show_advanced_options: false,
+        show_citations: false,
         show_history: true,
         show_saved_rubrics: true,
         show_processing_time: true,
-        show_analysis: true,
+        show_analysis: false,
         theme: 'default',
     },
 };
@@ -1180,11 +1180,13 @@ const ACL_FEATURES = [
 async function loadAclMatrix() {
     const wrap = document.getElementById('acl-matrix-wrap');
     if (!wrap) return;
-    let users;
-    try { users = await apiRequest('GET', '/admin/users'); }
-    catch (e) { wrap.innerHTML = `<p style="color:var(--error)">${esc(e.message)}</p>`; return; }
-
-    const global = state.settings;
+    let users, global;
+    try {
+        [users, global] = await Promise.all([
+            apiRequest('GET', '/admin/users'),
+            apiRequest('GET', '/admin/settings'),
+        ]);
+    } catch (e) { wrap.innerHTML = `<p style="color:var(--error)">${esc(e.message)}</p>`; return; }
     wrap.innerHTML = `
     <div class="acl-scroll">
     <table class="acl-table">
