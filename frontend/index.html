@@ -29,6 +29,7 @@
             <div class="ln-nav-links">
                 <a href="#ln-features" class="ln-nav-link">Features</a>
                 <a href="#ln-how" class="ln-nav-link">How It Works</a>
+                <a href="#ln-pricing" class="ln-nav-link">Pricing</a>
                 <button class="ln-theme-toggle" id="ln-theme-toggle" aria-label="Toggle theme" title="Toggle light / dark">
                     <span class="ln-theme-icon" id="ln-theme-icon"></span>
                     <span class="ln-theme-label" id="ln-theme-label"></span>
@@ -43,6 +44,7 @@
         <div class="ln-mobile-menu hidden" id="ln-mobile-menu">
             <a href="#ln-features" class="ln-mobile-link" id="ln-mob-feat">Features</a>
             <a href="#ln-how" class="ln-mobile-link" id="ln-mob-how">How It Works</a>
+            <a href="#ln-pricing" class="ln-mobile-link" id="ln-mob-price">Pricing</a>
             <button class="ln-mobile-link" onclick="showAuth('login')">Sign In</button>
             <button class="ln-btn-accent ln-btn-accent-full" onclick="showAuth('register')">Get Access</button>
             <button class="ln-theme-toggle ln-theme-toggle-mobile" id="ln-theme-toggle-mob" aria-label="Toggle theme">
@@ -318,6 +320,94 @@
         </div>
     </section>
 
+    <!-- Pricing -->
+    <section class="ln-section ln-section-alt" id="ln-pricing">
+        <div class="ln-section-inner">
+            <p class="ln-section-eyebrow">Pricing</p>
+            <h2 class="ln-section-h2">Simple, transparent plans</h2>
+            <p class="ln-section-sub">Start free. Upgrade when your practice demands more.</p>
+            <div class="ln-pricing-grid">
+                <!-- Basic -->
+                <div class="ln-price-card">
+                    <div class="ln-price-header">
+                        <h3>Basic</h3>
+                        <p class="ln-price-desc">For practitioners getting started with AI repertorization</p>
+                    </div>
+                    <div class="ln-price-amount">
+                        <span class="ln-price-currency">₹</span><span class="ln-price-num">499</span><span class="ln-price-interval">/mo</span>
+                    </div>
+                    <ul class="ln-price-features">
+                        <li><span class="ln-check">✓</span> AI-powered symptom analysis</li>
+                        <li><span class="ln-check">✓</span> Query history</li>
+                        <li><span class="ln-check">✓</span> Saved rubrics</li>
+                        <li><span class="ln-check">✓</span> Processing time metrics</li>
+                        <li class="ln-price-disabled"><span class="ln-x">✗</span> Voice input</li>
+                        <li class="ln-price-disabled"><span class="ln-x">✗</span> Source citations</li>
+                        <li class="ln-price-disabled"><span class="ln-x">✗</span> Advanced analysis</li>
+                    </ul>
+                    <button class="ln-btn-price" onclick="showAuth('register')">Get Started</button>
+                </div>
+                <!-- Pro (highlighted) -->
+                <div class="ln-price-card ln-price-featured">
+                    <div class="ln-price-popular">Most Popular</div>
+                    <div class="ln-price-header">
+                        <h3>Pro</h3>
+                        <p class="ln-price-desc">Full clinical toolkit for serious practitioners</p>
+                    </div>
+                    <div class="ln-price-amount">
+                        <span class="ln-price-currency">₹</span><span class="ln-price-num">999</span><span class="ln-price-interval">/mo</span>
+                    </div>
+                    <ul class="ln-price-features">
+                        <li><span class="ln-check">✓</span> Everything in Basic</li>
+                        <li><span class="ln-check">✓</span> Voice input (Hindi, Marathi, English)</li>
+                        <li><span class="ln-check">✓</span> Source citations &amp; verification</li>
+                        <li><span class="ln-check">✓</span> Deep analysis section</li>
+                        <li><span class="ln-check">✓</span> Advanced query options</li>
+                        <li><span class="ln-check">✓</span> Patient records</li>
+                        <li><span class="ln-check">✓</span> Priority support</li>
+                    </ul>
+                    <button class="ln-btn-price ln-btn-price-featured" onclick="showAuth('register')">Get Started</button>
+                </div>
+                <!-- Pro Annual -->
+                <div class="ln-price-card">
+                    <div class="ln-price-header">
+                        <h3>Pro Annual</h3>
+                        <p class="ln-price-desc">Best value — two months free</p>
+                    </div>
+                    <div class="ln-price-amount">
+                        <span class="ln-price-currency">₹</span><span class="ln-price-num">9,999</span><span class="ln-price-interval">/yr</span>
+                    </div>
+                    <div class="ln-price-save">Save ₹2,989 vs monthly</div>
+                    <ul class="ln-price-features">
+                        <li><span class="ln-check">✓</span> Everything in Pro</li>
+                        <li><span class="ln-check">✓</span> Billed annually</li>
+                        <li><span class="ln-check">✓</span> Two months free</li>
+                        <li><span class="ln-check">✓</span> Priority support</li>
+                    </ul>
+                    <button class="ln-btn-price" onclick="showAuth('register')">Get Started</button>
+                </div>
+                <!-- Custom / Enterprise -->
+                <div class="ln-price-card ln-price-custom">
+                    <div class="ln-price-header">
+                        <h3>Custom</h3>
+                        <p class="ln-price-desc">For clinics, institutions, and multi-practitioner teams</p>
+                    </div>
+                    <div class="ln-price-amount">
+                        <span class="ln-price-num ln-price-custom-label">Let's talk</span>
+                    </div>
+                    <ul class="ln-price-features">
+                        <li><span class="ln-check">✓</span> Everything in Pro</li>
+                        <li><span class="ln-check">✓</span> Multi-user team access</li>
+                        <li><span class="ln-check">✓</span> Custom integrations</li>
+                        <li><span class="ln-check">✓</span> Dedicated onboarding</li>
+                        <li><span class="ln-check">✓</span> SLA &amp; dedicated support</li>
+                    </ul>
+                    <a class="ln-btn-price ln-btn-price-outline" href="mailto:support@cliniq.in">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Banner -->
     <section class="ln-cta-banner">
         <div class="ln-orb ln-orb-cta"></div>
@@ -344,6 +434,7 @@
                     <strong>Product</strong>
                     <a href="#ln-features">Features</a>
                     <a href="#ln-how">How It Works</a>
+                    <a href="#ln-pricing">Pricing</a>
                     <a href="#ln-testimonials">Testimonials</a>
                 </div>
                 <div class="ln-footer-col">

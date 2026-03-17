@@ -1074,6 +1074,152 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 .ln-testi-author strong { display: block; font-size: .875rem; color: #e2e8f0; }
 .ln-testi-author small { font-size: .775rem; color: #475569; }
 
+/* ─── Pricing ──────────────────────────────────────────────── */
+.ln-pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    align-items: start;
+}
+.ln-price-card {
+    position: relative;
+    background: rgba(15,23,42,.6);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+}
+.ln-price-card:hover {
+    border-color: rgba(13,148,136,.3);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,.2);
+}
+.ln-price-featured {
+    border-color: #0d9488;
+    background: linear-gradient(180deg, rgba(13,148,136,.1) 0%, rgba(15,23,42,.6) 40%);
+    box-shadow: 0 0 30px rgba(13,148,136,.12);
+}
+.ln-price-popular {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+    color: #fff;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: .3rem 1rem;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.ln-price-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: .35rem;
+}
+.ln-price-desc {
+    font-size: .8rem;
+    color: #64748b;
+    line-height: 1.5;
+    min-height: 2.4rem;
+}
+.ln-price-amount {
+    margin: 1.25rem 0;
+    display: flex;
+    align-items: baseline;
+    gap: .15rem;
+}
+.ln-price-currency {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+.ln-price-num {
+    font-size: 2.75rem;
+    font-weight: 800;
+    color: #f1f5f9;
+    letter-spacing: -.03em;
+    line-height: 1;
+}
+.ln-price-interval {
+    font-size: .9rem;
+    color: #64748b;
+    margin-left: .15rem;
+}
+.ln-price-custom-label {
+    font-size: 2rem;
+    color: #5eead4;
+}
+.ln-price-save {
+    font-size: .75rem;
+    font-weight: 600;
+    color: #14b8a6;
+    background: rgba(20,184,166,.1);
+    border: 1px solid rgba(20,184,166,.2);
+    border-radius: 6px;
+    padding: .3rem .65rem;
+    display: inline-block;
+    margin-bottom: .5rem;
+    width: fit-content;
+}
+.ln-price-features {
+    list-style: none;
+    margin: .75rem 0 1.5rem;
+    flex: 1;
+}
+.ln-price-features li {
+    font-size: .825rem;
+    color: #cbd5e1;
+    padding: .4rem 0;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.ln-price-disabled { opacity: .4; }
+.ln-check { color: #14b8a6; font-weight: 700; font-size: .8rem; flex-shrink: 0; }
+.ln-x { color: #475569; font-size: .8rem; flex-shrink: 0; }
+.ln-btn-price {
+    display: block;
+    width: 100%;
+    padding: .75rem 1rem;
+    border-radius: 10px;
+    font-size: .875rem;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    transition: background .2s, transform .15s;
+    background: rgba(255,255,255,.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,.1);
+}
+.ln-btn-price:hover {
+    background: rgba(255,255,255,.1);
+    transform: translateY(-1px);
+}
+.ln-btn-price-featured {
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+    color: #fff;
+    border: none;
+}
+.ln-btn-price-featured:hover {
+    background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+}
+.ln-btn-price-outline {
+    background: transparent;
+    border: 1px solid rgba(13,148,136,.4);
+    color: #5eead4;
+}
+.ln-btn-price-outline:hover {
+    background: rgba(13,148,136,.1);
+    border-color: #14b8a6;
+}
+
 /* ─── CTA Banner ───────────────────────────────────────────── */
 .ln-cta-banner {
     position: relative;
@@ -1313,6 +1459,24 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 [data-theme="light"] .ln-testi-author strong { color: #0f172a; }
 [data-theme="light"] .ln-testi-author small { color: #64748b; }
 
+/* Pricing */
+[data-theme="light"] .ln-price-card { background: #ffffff; border-color: rgba(0,0,0,.08); }
+[data-theme="light"] .ln-price-card:hover { border-color: rgba(13,148,136,.3); box-shadow: 0 12px 40px rgba(0,0,0,.08); }
+[data-theme="light"] .ln-price-featured { background: linear-gradient(180deg, rgba(13,148,136,.06) 0%, #ffffff 40%); border-color: #0d9488; }
+[data-theme="light"] .ln-price-header h3 { color: #0f172a; }
+[data-theme="light"] .ln-price-desc { color: #64748b; }
+[data-theme="light"] .ln-price-currency { color: #475569; }
+[data-theme="light"] .ln-price-num { color: #0f172a; }
+[data-theme="light"] .ln-price-interval { color: #64748b; }
+[data-theme="light"] .ln-price-custom-label { color: #0d9488; }
+[data-theme="light"] .ln-price-features li { color: #334155; }
+[data-theme="light"] .ln-price-disabled { opacity: .35; }
+[data-theme="light"] .ln-btn-price { background: #f1f5f9; color: #1e293b; border-color: rgba(0,0,0,.1); }
+[data-theme="light"] .ln-btn-price:hover { background: #e2e8f0; }
+[data-theme="light"] .ln-btn-price-featured { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; }
+[data-theme="light"] .ln-btn-price-outline { background: transparent; border-color: rgba(13,148,136,.3); color: #0d9488; }
+[data-theme="light"] .ln-btn-price-outline:hover { background: rgba(13,148,136,.06); }
+
 /* CTA banner */
 [data-theme="light"] .ln-cta-banner { background: linear-gradient(135deg, #f0fdfa 0%, #dbeafe 100%); }
 [data-theme="light"] .ln-cta-inner h2 { color: #0f172a; }
@@ -1327,6 +1491,7 @@ body.theme-dark .history-item-header:hover { background: #334155; }
 
 /* ─── Landing Responsive ───────────────────────────────────── */
 @media (max-width: 1000px) {
+    .ln-pricing-grid { grid-template-columns: repeat(2, 1fr); }
     .ln-features-grid { grid-template-columns: repeat(2, 1fr); }
     .ln-testi-grid { grid-template-columns: repeat(2, 1fr); }
     .ln-steps {
@@ -1350,6 +1515,7 @@ body.theme-dark .history-item-header:hover { background: #334155; }
     .ln-hamburger { display: flex; }
 }
 @media (max-width: 600px) {
+    .ln-pricing-grid { grid-template-columns: 1fr; }
     .ln-features-grid { grid-template-columns: 1fr; }
     .ln-testi-grid { grid-template-columns: 1fr; }
     .ln-footer-inner { flex-direction: column; }

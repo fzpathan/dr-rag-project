@@ -195,7 +195,7 @@ function showAuth(form) {
         document.getElementById('ln-mobile-menu').classList.toggle('hidden');
     };
     // Close mobile menu nav links
-    ['ln-mob-feat','ln-mob-how'].forEach(id => {
+    ['ln-mob-feat','ln-mob-how','ln-mob-price'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.onclick = () => document.getElementById('ln-mobile-menu').classList.add('hidden');
     });
