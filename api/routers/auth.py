@@ -8,6 +8,7 @@ from api.database import get_db
 from api.models.auth import (
     UserCreate,
     UserLogin,
+    GoogleOAuthLoginRequest,
     UserResponse,
     TokenResponse,
     TokenRefreshRequest,
@@ -22,6 +23,19 @@ from api.dependencies import get_current_user
 from api.config import api_config
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+def _issue_token_response(user_id: str) -> TokenResponse:
+    """Issue access+refresh tokens for a user and format response payload."""
+    token_data = {"sub": user_id}
+    access_token = create_access_token(token_data)
+    refresh_token = create_refresh_token(token_data)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=api_config.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -72,17 +86,42 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Create tokens
-    token_data = {"sub": user.id}
-    access_token = create_access_token(token_data)
-    refresh_token = create_refresh_token(token_data)
+    return _issue_token_response(user.id)
 
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        expires_in=api_config.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
+
+@router.post("/google", response_model=TokenResponse)
+async def google_login(
+    request: GoogleOAuthLoginRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Authenticate via Google OAuth ID token.
+
+    - **id_token**: Google Sign-In ID token from client
+    - **full_name**: Optional display name fallback
+    """
+    try:
+        payload = AuthService.verify_google_id_token(request.id_token)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        )
+
+    email = payload["email"]
+    full_name = payload.get("name") or request.full_name or email.split("@")[0]
+
+    user = AuthService.get_user_by_email(db, email)
+    if not user:
+        user = AuthService.create_google_user(db, email=email, full_name=full_name)
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is disabled",
+        )
+
+    return _issue_token_response(user.id)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -119,17 +158,7 @@ async def refresh_token(
             detail="User not found or inactive",
         )
 
-    # Create new tokens
-    token_data = {"sub": user.id}
-    access_token = create_access_token(token_data)
-    new_refresh_token = create_refresh_token(token_data)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=new_refresh_token,
-        token_type="bearer",
-        expires_in=api_config.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
+    return _issue_token_response(user.id)
 
 
 @router.get("/me", response_model=UserResponse)

@@ -44,6 +44,43 @@ class APIConfig(BaseConfig):
     CACHE_MAX_SIZE: int = 1000
     CACHE_TTL_HOURS: int = 24
 
+    # Google OAuth settings
+    @property
+    def GOOGLE_CLIENT_ID(self) -> Optional[str]:
+        return os.getenv("GOOGLE_CLIENT_ID")
+
+    GOOGLE_TOKENINFO_URL: str = field(
+        default_factory=lambda: os.getenv(
+            "GOOGLE_TOKENINFO_URL",
+            "https://oauth2.googleapis.com/tokeninfo",
+        )
+    )
+
+    # Payment provider configuration
+    PAYMENT_PROVIDER: str = field(default_factory=lambda: os.getenv("PAYMENT_PROVIDER", "razorpay"))
+    RAZORPAY_BASE_URL: str = field(default_factory=lambda: os.getenv("RAZORPAY_BASE_URL", "https://api.razorpay.com/v1"))
+
+    @property
+    def RAZORPAY_KEY_ID(self) -> Optional[str]:
+        return os.getenv("RAZORPAY_KEY_ID")
+
+    @property
+    def RAZORPAY_KEY_SECRET(self) -> Optional[str]:
+        return os.getenv("RAZORPAY_KEY_SECRET")
+
+    @property
+    def PAYMENT_WEBHOOK_SECRET(self) -> Optional[str]:
+        return os.getenv("PAYMENT_WEBHOOK_SECRET")
+
+    @property
+    def PAYMENT_UPI_VPA(self) -> Optional[str]:
+        return os.getenv("PAYMENT_UPI_VPA")
+
+    def payment_provider_ready(self) -> bool:
+        if self.PAYMENT_PROVIDER.lower() != "razorpay":
+            return False
+        return bool(self.RAZORPAY_KEY_ID and self.RAZORPAY_KEY_SECRET)
+
 
 # Global API config instance
 api_config = APIConfig()

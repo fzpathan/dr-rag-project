@@ -2,7 +2,8 @@
 LLM chain for generating responses from retrieved context.
 """
 import logging
-from typing import Tuple, List
+import random
+from typing import Tuple, List, Iterator, Optional
 
 import httpx
 from langchain_openai import ChatOpenAI
@@ -14,6 +15,48 @@ from src.config import config
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+OPENROUTER_HEADERS = {
+    "HTTP-Referer": "https://cliniq-api.run.app",
+    "X-Title": "ClinIQ Homeopathy Assistant",
+}
+
+RETRYABLE_STATUS_CODES = {401, 403, 429, 500, 502, 503, 504}
+
+
+class OpenRouterKeyManager:
+    """Keeps track of available OpenRouter keys and shuffles them deterministically."""
+
+    def __init__(self, keys: List[str], seed: Optional[int] = None):
+        if not keys:
+            raise ValueError("At least one OpenRouter API key is required for rotation")
+        self._keys = keys
+        self._rng = random.Random(seed) if seed is not None else random.Random()
+
+    def ordered_keys(self) -> List[str]:
+        if len(self._keys) == 1:
+            return self._keys
+        shuffled = self._keys[:]
+        self._rng.shuffle(shuffled)
+        return shuffled
+
+    @property
+    def count(self) -> int:
+        return len(self._keys)
+
+    @staticmethod
+    def redact(key: str) -> str:
+        if len(key) <= 8:
+            return (key[:4] + "...") if len(key) > 4 else key
+        return f"{key[:4]}...{key[-4:]}"
+
+
+def _should_retry_error(exc: Exception) -> bool:
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in RETRYABLE_STATUS_CODES
+    lowered = str(exc).lower()
+    retry_keywords = ["rate limit", "quota", "api key", "auth", "invalid", "too many requests"]
+    return any(keyword in lowered for keyword in retry_keywords)
 
 
 # Prompt template for remedy queries
@@ -283,9 +326,92 @@ class RemedyChain:
     """Chain for generating remedy answers from context."""
 
     def __init__(self):
-        self.llm = get_llm()
+        self.http_client = httpx.Client(
+            timeout=httpx.Timeout(60.0, connect=15.0),
+            follow_redirects=True,
+            transport=httpx.HTTPTransport(retries=3),
+        )
         self.prompt = ChatPromptTemplate.from_template(REMEDY_PROMPT)
-        self.chain = self.prompt | self.llm | StrOutputParser()
+        self.openrouter_manager: Optional[OpenRouterKeyManager] = None
+        self.default_llm: Optional[ChatOpenAI] = None
+
+        if config.USE_OPENROUTER and config.OPENROUTER_API_KEYS:
+            self.openrouter_manager = OpenRouterKeyManager(
+                keys=config.OPENROUTER_API_KEYS,
+                seed=config.OPENROUTER_KEY_ROTATION_SEED,
+            )
+            logger.info(
+                "OpenRouter multi-key rotation enabled (%d keys)",
+                self.openrouter_manager.count,
+            )
+        else:
+            self.default_llm = get_llm()
+
+    def _build_chain(self, llm: ChatOpenAI):
+        return self.prompt | llm | StrOutputParser()
+
+    def _create_openrouter_llm(self, api_key: str) -> ChatOpenAI:
+        redacted = OpenRouterKeyManager.redact(api_key)
+        logger.info("OpenRouter key %s chosen", redacted)
+        return ChatOpenAI(
+            model=config.OPENROUTER_MODEL,
+            temperature=config.LLM_TEMPERATURE,
+            max_tokens=2048,
+            api_key=api_key,
+            base_url=config.OPENROUTER_BASE_URL,
+            default_headers=OPENROUTER_HEADERS,
+            http_client=self.http_client,
+        )
+
+    def _invoke_with_openrouter(
+        self,
+        question: str,
+        context: str,
+    ) -> str:
+        if not self.openrouter_manager:
+            raise ValueError("OpenRouter key manager is not configured")
+
+        last_error: Optional[Exception] = None
+        for key in self.openrouter_manager.ordered_keys():
+            llm = self._create_openrouter_llm(key)
+            chain = self._build_chain(llm)
+            try:
+                return chain.invoke({"question": question, "context": context})
+            except Exception as exc:
+                if not _should_retry_error(exc):
+                    raise
+                last_error = exc
+                logger.warning(
+                    "OpenRouter key %s failed (%s) — trying next key",
+                    OpenRouterKeyManager.redact(key),
+                    exc,
+                )
+
+        raise last_error or RuntimeError("All OpenRouter keys failed")
+
+    def _stream_with_openrouter(self, question: str, context: str) -> Iterator[str]:
+        if not self.openrouter_manager:
+            raise ValueError("OpenRouter key manager is not configured")
+
+        last_error: Optional[Exception] = None
+        for key in self.openrouter_manager.ordered_keys():
+            llm = self._create_openrouter_llm(key)
+            chain = self._build_chain(llm)
+            try:
+                for chunk in chain.stream({"question": question, "context": context}):
+                    yield chunk
+                return
+            except Exception as exc:
+                if not _should_retry_error(exc):
+                    raise
+                last_error = exc
+                logger.warning(
+                    "OpenRouter key %s streaming failed (%s) — switching keys",
+                    OpenRouterKeyManager.redact(key),
+                    exc,
+                )
+
+        raise last_error or RuntimeError("All OpenRouter keys failed during streaming")
 
     def generate_response(
         self,
@@ -312,7 +438,13 @@ class RemedyChain:
         logger.info(f"Context length: {len(context)} characters")
 
         try:
-            response = self.chain.invoke({"question": question, "context": context})
+            if self.openrouter_manager:
+                response = self._invoke_with_openrouter(question, context)
+            else:
+                if not self.default_llm:
+                    raise ValueError("No LLM configured for query execution")
+                chain = self._build_chain(self.default_llm)
+                response = chain.invoke({"question": question, "context": context})
             logger.info(f"Response generated successfully, length: {len(response)} characters")
             return response, citations
         except Exception as e:
@@ -334,5 +466,13 @@ class RemedyChain:
             yield "Information not found in the provided corpus."
             return
 
-        for chunk in self.chain.stream({"question": question, "context": context}):
+        if self.openrouter_manager:
+            yield from self._stream_with_openrouter(question, context)
+            return
+
+        if not self.default_llm:
+            raise ValueError("No LLM configured for streaming execution")
+
+        chain = self._build_chain(self.default_llm)
+        for chunk in chain.stream({"question": question, "context": context}):
             yield chunk

@@ -36,6 +36,23 @@ export const authService = {
   },
 
   /**
+   * Login with Google ID token.
+   */
+  async loginWithGoogleToken(idToken: string, fullName?: string): Promise<TokenResponse> {
+    const response = await api.post<TokenResponse>(endpoints.googleLogin, {
+      id_token: idToken,
+      full_name: fullName,
+    });
+
+    await setStoredTokens(
+      response.data.access_token,
+      response.data.refresh_token
+    );
+
+    return response.data;
+  },
+
+  /**
    * Get current user info.
    */
   async getCurrentUser(): Promise<User> {

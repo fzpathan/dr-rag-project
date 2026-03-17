@@ -13,14 +13,20 @@ def test_openrouter():
     print("=" * 50)
 
     # Check environment variables
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    keys_env = os.getenv("OPENROUTER_API_KEYS", "")
+    keys = [key.strip() for key in keys_env.split(",") if key.strip()]
+    primary_key = os.getenv("OPENROUTER_API_KEY")
+    if primary_key and primary_key not in keys:
+        keys.insert(0, primary_key)
     use_openrouter = os.getenv("USE_OPENROUTER", "false").lower() == "true"
 
     print(f"\nUSE_OPENROUTER: {use_openrouter}")
-    print(f"OPENROUTER_API_KEY: {'Set (' + api_key[:20] + '...)' if api_key else 'NOT SET'}")
+    print(f"OPENROUTER_API_KEYS: {len(keys)} key(s) configured")
+    if keys:
+        print(f"First key (redacted): {keys[0][:4]}...{keys[0][-4:]}")
 
-    if not api_key:
-        print("\nERROR: OPENROUTER_API_KEY not found in .env file")
+    if not keys:
+        print("\nERROR: No OPENROUTER_API_KEY(S) found in .env file")
         return
 
     # Test with raw HTTP request first
@@ -31,7 +37,7 @@ def test_openrouter():
     import requests
 
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {keys[0]}",
         "Content-Type": "application/json",
     }
 

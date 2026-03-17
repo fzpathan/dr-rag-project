@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 # Load environment variables from .env file
 load_dotenv()
@@ -54,6 +54,25 @@ class Config:
     @property
     def OPENROUTER_API_KEY(self) -> Optional[str]:
         return os.getenv("OPENROUTER_API_KEY")
+
+    @property
+    def OPENROUTER_API_KEYS(self) -> List[str]:
+        keys_env = os.getenv("OPENROUTER_API_KEYS", "")
+        keys = [key.strip() for key in keys_env.split(",") if key.strip()]
+        primary = self.OPENROUTER_API_KEY
+        if primary and primary not in keys:
+            keys.insert(0, primary)
+        return keys
+
+    @property
+    def OPENROUTER_KEY_ROTATION_SEED(self) -> Optional[int]:
+        seed = os.getenv("OPENROUTER_KEY_ROTATION_SEED")
+        if seed is None:
+            return None
+        try:
+            return int(seed)
+        except ValueError:
+            return None
 
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENROUTER_MODEL: str = "google/gemini-2.5-flash"

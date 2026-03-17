@@ -2,7 +2,7 @@
 Database setup with SQLAlchemy.
 """
 from datetime import datetime
-from sqlalchemy import create_engine, Column, String, DateTime, Boolean, Text, text
+from sqlalchemy import create_engine, Column, String, DateTime, Boolean, Text, Integer, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import uuid
@@ -29,7 +29,8 @@ class User(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)
+    oauth_provider = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False, server_default='0')
     settings_json = Column(Text, nullable=True)   # JSON ACL flags; NULL = use global defaults
@@ -91,6 +92,25 @@ class PatientQuery(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Payment(Base):
+    """Tracks payment attempts and confirmation status."""
+    __tablename__ = "payments"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, index=True, nullable=False)
+    plan_id = Column(String, nullable=False)
+    plan_name = Column(String, nullable=False)
+    provider = Column(String, nullable=False, default=api_config.PAYMENT_PROVIDER)
+    provider_order_id = Column(String, nullable=True)
+    provider_payment_id = Column(String, nullable=True)
+    amount = Column(Integer, nullable=False)
+    currency = Column(String, nullable=False, default="INR")
+    status = Column(String, nullable=False, default="created")
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 def create_tables():
     """Create all database tables, run migrations for existing DBs."""
     Base.metadata.create_all(bind=engine)
@@ -98,6 +118,7 @@ def create_tables():
     migrations = [
         "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0",
         "ALTER TABLE users ADD COLUMN settings_json TEXT DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN oauth_provider TEXT DEFAULT NULL",
         "ALTER TABLE query_history ADD COLUMN citations_json TEXT DEFAULT NULL",
     ]
     with engine.connect() as conn:

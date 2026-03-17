@@ -9,6 +9,7 @@ from api.routers.voice import router as voice_router
 from api.routers.history import router as history_router
 from api.routers.saved import router as saved_router
 from api.routers.patients import router as patients_router
+from api.routers.payments import router as payments_router
 
 __all__ = [
     "auth_router",
@@ -19,4 +20,5 @@ __all__ = [
     "history_router",
     "saved_router",
     "patients_router",
+    "payments_router",
 ]

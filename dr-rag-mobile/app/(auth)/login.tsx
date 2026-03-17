@@ -31,8 +31,10 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
-  const { login, isLoading } = useAuth();
+  const { login, loginWithGoogleToken, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [googleIdToken, setGoogleIdToken] = useState('');
+  const [googleName, setGoogleName] = useState('');
 
   const {
     control,
@@ -49,6 +51,19 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Login Failed', error.response?.data?.detail || 'Invalid email or password');
+    }
+  };
+
+  const onGoogleSubmit = async () => {
+    if (!googleIdToken.trim()) {
+      Alert.alert('Google Login', 'Paste a valid Google ID token first.');
+      return;
+    }
+    try {
+      await loginWithGoogleToken(googleIdToken.trim(), googleName.trim() || undefined);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Google Login Failed', error.response?.data?.detail || 'Unable to login with Google token');
     }
   };
 
@@ -165,6 +180,47 @@ export default function LoginScreen() {
                 )}
               </LinearGradient>
             </TouchableOpacity>
+
+            <Text style={styles.separatorText}>or continue with Google ID token</Text>
+
+            <TextInput
+              label="Google ID Token"
+              mode="outlined"
+              value={googleIdToken}
+              onChangeText={setGoogleIdToken}
+              style={styles.input}
+              outlineStyle={styles.inputOutline}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary[500]}
+              textColor={colors.textPrimary}
+              autoCapitalize="none"
+              left={<TextInput.Icon icon="google" color={colors.textSecondary} />}
+            />
+
+            <TextInput
+              label="Name (optional)"
+              mode="outlined"
+              value={googleName}
+              onChangeText={setGoogleName}
+              style={styles.input}
+              outlineStyle={styles.inputOutline}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary[500]}
+              textColor={colors.textPrimary}
+              autoCapitalize="words"
+              left={<TextInput.Icon icon="account-circle-outline" color={colors.textSecondary} />}
+            />
+
+            <TouchableOpacity
+              onPress={onGoogleSubmit}
+              disabled={isLoading}
+              activeOpacity={0.85}
+              style={styles.secondarySubmitWrap}
+            >
+              <View style={[styles.secondarySubmit, isLoading && styles.submitDisabled]}>
+                <Text style={styles.secondarySubmitLabel}>Sign In with Google Token</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Register link */}
@@ -233,6 +289,7 @@ const styles = StyleSheet.create({
 
   // Submit
   submitWrap: { marginTop: 20 },
+  secondarySubmitWrap: { marginTop: 12 },
   submitGradient: {
     height: 52,
     borderRadius: 12,
@@ -246,6 +303,27 @@ const styles = StyleSheet.create({
   },
   submitDisabled: { opacity: 0.6 },
   submitLabel: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+  separatorText: {
+    marginTop: 14,
+    marginBottom: 10,
+    fontSize: 12,
+    textAlign: 'center',
+    color: colors.textSecondary,
+  },
+  secondarySubmit: {
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary[400],
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceHigh,
+  },
+  secondarySubmitLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
 
   // Footer
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },

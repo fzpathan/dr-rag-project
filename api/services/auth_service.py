@@ -1,9 +1,12 @@
 """
 Authentication service for user management.
 """
-from typing import Optional
+from typing import Optional, Dict, Any
+
+import httpx
 from sqlalchemy.orm import Session
 
+from api.config import api_config
 from api.database import User
 from api.models.auth import UserCreate
 from api.utils.security import verify_password, get_password_hash
@@ -49,6 +52,25 @@ class AuthService:
         return user
 
     @staticmethod
+    def create_google_user(
+        db: Session,
+        email: str,
+        full_name: Optional[str] = None,
+    ) -> User:
+        """Create a new Google-authenticated user."""
+        user = User(
+            email=email,
+            full_name=full_name or email.split("@")[0],
+            hashed_password=None,
+            oauth_provider="google",
+        )
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
+    @staticmethod
     def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         """
         Authenticate a user with email and password.
@@ -66,6 +88,9 @@ class AuthService:
         if not user:
             return None
 
+        if not user.hashed_password:
+            return None
+
         if not verify_password(password, user.hashed_password):
             return None
 
@@ -73,3 +98,35 @@ class AuthService:
             return None
 
         return user
+
+    @staticmethod
+    def verify_google_id_token(id_token: str) -> Dict[str, Any]:
+        """
+        Validate a Google ID token using Google's tokeninfo endpoint.
+
+        Returns token claims if valid, raises ValueError if invalid.
+        """
+        try:
+            response = httpx.get(
+                api_config.GOOGLE_TOKENINFO_URL,
+                params={"id_token": id_token},
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except httpx.HTTPError as exc:
+            raise ValueError("Invalid Google ID token") from exc
+
+        if payload.get("email_verified") not in ("true", True):
+            raise ValueError("Google account email is not verified")
+
+        email = payload.get("email")
+        if not email:
+            raise ValueError("Google token does not include an email")
+
+        configured_client_id = api_config.GOOGLE_CLIENT_ID
+        token_audience = payload.get("aud")
+        if configured_client_id and token_audience != configured_client_id:
+            raise ValueError("Google token audience mismatch")
+
+        return payload

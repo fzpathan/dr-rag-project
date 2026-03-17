@@ -19,6 +19,7 @@ export const endpoints = {
   // Auth
   register: '/auth/register',
   login: '/auth/login',
+  googleLogin: '/auth/google',
   refresh: '/auth/refresh',
   me: '/auth/me',
   logout: '/auth/logout',
@@ -40,6 +41,10 @@ export const endpoints = {
   history: '/history',
   saved: '/saved',
   patients: '/patients',
+  paymentPlans: '/payments/plans',
+  paymentCreateOrder: '/payments/create-order',
+  paymentVerify: '/payments/verify',
+  myPayments: '/payments/mine',
 
   // Health
   health: '/health',

@@ -12,6 +12,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     login: storeLogin,
+    loginWithGoogleToken: storeGoogleLogin,
     register: storeRegister,
     logout: storeLogout,
     loadUser,
@@ -26,6 +27,10 @@ export function useAuth() {
     await storeRegister(data);
   }, [storeRegister]);
 
+  const loginWithGoogleToken = useCallback(async (idToken: string, fullName?: string) => {
+    await storeGoogleLogin(idToken, fullName);
+  }, [storeGoogleLogin]);
+
   const logout = useCallback(async () => {
     await storeLogout();
   }, [storeLogout]);
@@ -35,6 +40,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     login,
+    loginWithGoogleToken,
     register,
     logout,
     loadUser,

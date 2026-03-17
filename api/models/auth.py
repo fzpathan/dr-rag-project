@@ -19,6 +19,12 @@ class UserLogin(BaseModel):
     password: str
 
 
+class GoogleOAuthLoginRequest(BaseModel):
+    """Request model for Google OAuth login."""
+    id_token: str = Field(..., min_length=10)
+    full_name: Optional[str] = Field(default=None, max_length=100)
+
+
 class UserResponse(BaseModel):
     """Response model for user data."""
     id: str

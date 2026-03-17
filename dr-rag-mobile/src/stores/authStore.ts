@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 interface AuthStore extends AuthState {
   settings: AppSettings;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithGoogleToken: (idToken: string, fullName?: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
@@ -63,6 +64,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const tokens = await authService.login(credentials);
+      const user = await authService.getCurrentUser();
+      const settings = await fetchSettings();
+      set({ user, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, isAuthenticated: true, isLoading: false, settings });
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  loginWithGoogleToken: async (idToken: string, fullName?: string) => {
+    set({ isLoading: true });
+    try {
+      const tokens = await authService.loginWithGoogleToken(idToken, fullName);
       const user = await authService.getCurrentUser();
       const settings = await fetchSettings();
       set({ user, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, isAuthenticated: true, isLoading: false, settings });

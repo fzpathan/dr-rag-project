@@ -64,7 +64,10 @@ Create a `.env` file:
 ```env
 # LLM provider
 USE_OPENROUTER=true
-OPENROUTER_API_KEY=<your-api-key>
+OPENAI_API_KEY=
+OPENROUTER_API_KEY=<your-primary-openrouter-key>
+OPENROUTER_API_KEYS=<primary-key>,<backup-key-1>,<backup-key-2>
+OPENROUTER_KEY_ROTATION_SEED=0  # optional: fixes rotation order for testing
 OPENROUTER_MODEL=<your-preferred-model>
 
 # Auth
@@ -72,10 +75,17 @@ JWT_SECRET_KEY=<generate with: openssl rand -hex 32>
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=15
 REFRESH_TOKEN_EXPIRE_DAYS=7
+GOOGLE_CLIENT_ID=<google-oauth-client-id>
+
+# Payments (UPI via Razorpay)
+PAYMENT_PROVIDER=razorpay
+RAZORPAY_KEY_ID=<rzp_key_id>
+RAZORPAY_KEY_SECRET=<rzp_key_secret>
 
 # Embeddings
 USE_OPENAI_EMBEDDINGS=false
 ```
+Use `OPENROUTER_API_KEYS` to provide a comma-separated list of fallback keys when your primary key is rate-limited or quota-bound. Setting `OPENROUTER_KEY_ROTATION_SEED` to a fixed integer makes the shuffle deterministic, which is handy for reproducible CI runs or troubleshooting.
 
 ### 2. Add knowledge sources
 
