@@ -1080,7 +1080,7 @@ body.theme-dark .history-item-header:hover { background: #334155; }
     grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
     margin-top: 2.5rem;
-    align-items: start;
+    align-items: stretch;
 }
 .ln-price-card {
     position: relative;
